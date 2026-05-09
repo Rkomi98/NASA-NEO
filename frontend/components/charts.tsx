@@ -108,27 +108,38 @@ function parseOrbitNumber(value: unknown): number | null {
 
 function getOrbitClassType(item: FeedEvent): string {
   const orbitClass = item.orbital_data.orbit_class;
-  if (orbitClass && typeof orbitClass === "object" && "type" in orbitClass) {
-    return String((orbitClass as { type?: unknown }).type ?? "NEO");
+  if (orbitClass && typeof orbitClass === "object") {
+    const value = orbitClass as {
+      type?: unknown;
+      orbit_class_type?: unknown;
+    };
+    return String(value.type ?? value.orbit_class_type ?? "NEO");
   }
   return "NEO";
 }
 
-function getOrbitColor(item: FeedEvent): string {
-  if (item.is_potentially_hazardous_asteroid) {
-    return "#ff5760";
-  }
-  const orbitClass = getOrbitClassType(item).toUpperCase();
-  if (orbitClass.includes("ATE")) {
-    return "#f5a623";
-  }
-  if (orbitClass.includes("AMO")) {
-    return "#4ad7a8";
-  }
-  if (orbitClass.includes("APO")) {
-    return "#6ec1ff";
-  }
-  return "#d4a557";
+function getOrbitPaletteColor(index: number): string {
+  const palette = [
+    "#ff5c7a",
+    "#52d6ff",
+    "#ffd166",
+    "#7cffb2",
+    "#b98cff",
+    "#ff9f45",
+    "#67e8f9",
+    "#f472b6",
+    "#a3e635",
+    "#f87171",
+    "#38bdf8",
+    "#facc15",
+    "#c084fc",
+    "#34d399",
+    "#fb7185",
+    "#60a5fa",
+    "#fbbf24",
+    "#2dd4bf",
+  ];
+  return palette[index % palette.length];
 }
 
 function buildOrbitPath({
@@ -137,19 +148,26 @@ function buildOrbitPath({
   inclinationDeg = 0,
   phase = 0,
   samples = 144,
+  closed = true,
+  arc = Math.PI * 2,
 }: {
   semiMajorAxis: number;
   eccentricity: number;
   inclinationDeg?: number;
   phase?: number;
   samples?: number;
+  closed?: boolean;
+  arc?: number;
 }): OrbitPoint[] {
   const clampedEccentricity = Math.max(0, Math.min(0.92, eccentricity));
   const inclination = (inclinationDeg * Math.PI) / 180;
   const points: OrbitPoint[] = [];
 
-  for (let index = 0; index <= samples; index += 1) {
-    const angle = (index / samples) * Math.PI * 2 + phase;
+  const steps = closed ? samples : Math.max(2, samples);
+  const startAngle = phase - arc / 2;
+
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = startAngle + (index / steps) * arc;
     const radius =
       (semiMajorAxis * (1 - clampedEccentricity * clampedEccentricity)) /
       (1 + clampedEccentricity * Math.cos(angle));
@@ -184,6 +202,9 @@ function estimateAsteroidPosition(item: FeedEvent, index: number): OrbitPoint {
 }
 
 function buildAsteroidOrbit(item: FeedEvent, index: number) {
+  const hasRealElements =
+    parseOrbitNumber(item.orbital_data.semi_major_axis) != null &&
+    parseOrbitNumber(item.orbital_data.eccentricity) != null;
   const semiMajorAxis =
     parseOrbitNumber(item.orbital_data.semi_major_axis) ??
     parseOrbitNumber(item.orbital_data.aphelion_distance) ??
@@ -200,17 +221,20 @@ function buildAsteroidOrbit(item: FeedEvent, index: number) {
   const observations = parseOrbitNumber(item.orbital_data.observations_used);
   const orbitClass = getOrbitClassType(item);
   const phase = (index * Math.PI) / 11;
+  const samples = hasRealElements ? 144 : 24;
 
   return {
+    rank: index + 1,
     name: item.name,
     orbitClass,
-    color: getOrbitColor(item),
+    color: getOrbitPaletteColor(index),
     semiMajorAxis,
     eccentricity,
     inclination,
     orbitalPeriod,
     moid,
     observations,
+    hasRealElements,
     position: estimateAsteroidPosition(item, index),
     diameter:
       item.estimated_diameter.kilometers.estimated_diameter_max,
@@ -220,6 +244,9 @@ function buildAsteroidOrbit(item: FeedEvent, index: number) {
       eccentricity,
       inclinationDeg: inclination,
       phase,
+      samples,
+      closed: hasRealElements,
+      arc: hasRealElements ? Math.PI * 2 : Math.PI * 0.46,
     }),
   };
 }
@@ -402,7 +429,20 @@ export function SizeDistributionChart({ data }: { data: FeedEvent[] }) {
 export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
   const [ref, failed] = useChart(
     () => {
-      const items = data.slice(0, 64);
+      const items = [...data]
+        .sort((a, b) => {
+          const hazardDelta =
+            Number(b.is_potentially_hazardous_asteroid) -
+            Number(a.is_potentially_hazardous_asteroid);
+          if (hazardDelta !== 0) {
+            return hazardDelta;
+          }
+          return (
+            Number(a.close_approach.miss_distance.kilometers) -
+            Number(b.close_approach.miss_distance.kilometers)
+          );
+        })
+        .slice(0, 18);
       const asteroidOrbits = items.map(buildAsteroidOrbit);
       if (!asteroidOrbits.length) {
         return {};
@@ -420,10 +460,15 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
         backgroundColor: "#03050d",
         tooltip: {
           trigger: "item",
-          formatter: (params: { seriesName?: string; data?: { value?: unknown[] } }) => {
-            const value = params.data?.value;
+          confine: true,
+          backgroundColor: "rgba(255,255,255,0.96)",
+          borderColor: "rgba(110,193,255,0.55)",
+          textStyle: { color: "#0b1b3c", fontSize: 12 },
+          formatter: (params: { seriesName?: string; data?: { value?: unknown[] } | unknown[] }) => {
+            const dataValue = Array.isArray(params.data) ? params.data : params.data?.value;
+            const value = dataValue;
             if (!Array.isArray(value)) {
-              return params.seriesName ?? "";
+              return `<strong>${params.seriesName ?? ""}</strong>`;
             }
             return [
               `<strong>${value[3] ?? params.seriesName}</strong>`,
@@ -527,8 +572,13 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
             data: orbit.path,
             lineStyle: {
               color: orbit.color,
-              opacity: orbit.hazardous ? 0.42 : 0.2,
-              width: orbit.hazardous ? 1.8 : 1,
+              opacity: orbit.hasRealElements
+                ? orbit.hazardous ? 0.48 : 0.26
+                : orbit.hazardous ? 0.72 : 0.42,
+              width: orbit.hasRealElements
+                ? orbit.hazardous ? 1.8 : 1
+                : orbit.hazardous ? 2.6 : 1.8,
+              type: orbit.hasRealElements ? "solid" : "dashed",
             },
             silent: true,
           })),
@@ -551,6 +601,20 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
               itemStyle: {
                 color: orbit.color,
                 opacity: orbit.hazardous ? 1 : 0.78,
+              },
+              label: {
+                show: orbit.rank <= 7,
+                formatter: `#${orbit.rank} ${orbit.name.replace(/[()]/g, "")}`,
+                distance: 8,
+                textStyle: {
+                  color: "#f1eee5",
+                  fontSize: 10,
+                  backgroundColor: "rgba(5,6,15,0.72)",
+                  borderColor: orbit.color,
+                  borderWidth: 1,
+                  borderRadius: 4,
+                  padding: [3, 5],
+                },
               },
             })),
             symbolSize: (value: unknown[]) => {

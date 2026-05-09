@@ -156,6 +156,11 @@ class NeoService:
             "minimum_orbit_intersection",
             "perihelion_distance",
             "aphelion_distance",
+            "ascending_node_longitude",
+            "perihelion_argument",
+            "mean_anomaly",
+            "epoch_osculation",
+            "equinox",
         ]
         return {key: orbital_data[key] for key in keys if key in orbital_data}
 

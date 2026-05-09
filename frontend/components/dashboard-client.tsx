@@ -89,10 +89,101 @@ function classNames(...classes: Array<string | false | null | undefined>): strin
 
 function getOrbitClassType(item: FeedEvent): string {
   const orbitClass = item.orbital_data.orbit_class;
-  if (orbitClass && typeof orbitClass === "object" && "type" in orbitClass) {
-    return String((orbitClass as { type?: unknown }).type ?? "NEO");
+  if (orbitClass && typeof orbitClass === "object") {
+    const value = orbitClass as {
+      type?: unknown;
+      orbit_class_type?: unknown;
+    };
+    return String(value.type ?? value.orbit_class_type ?? "NEO");
   }
   return "NEO";
+}
+
+function getOrbitPaletteColor(index: number): string {
+  const palette = [
+    "#ff5c7a",
+    "#52d6ff",
+    "#ffd166",
+    "#7cffb2",
+    "#b98cff",
+    "#ff9f45",
+    "#67e8f9",
+    "#f472b6",
+    "#a3e635",
+    "#f87171",
+    "#38bdf8",
+    "#facc15",
+    "#c084fc",
+    "#34d399",
+    "#fb7185",
+    "#60a5fa",
+    "#fbbf24",
+    "#2dd4bf",
+  ];
+  return palette[index % palette.length];
+}
+
+const ORBITAL_LABELS: Record<string, string> = {
+  orbit_id: "ID orbita",
+  orbit_determination_date: "Orbita calcolata il",
+  first_observation_date: "Prima osservazione",
+  last_observation_date: "Ultima osservazione",
+  data_arc_in_days: "Arco osservativo",
+  observations_used: "Osservazioni usate",
+  orbit_uncertainty: "Incertezza orbitale",
+  minimum_orbit_intersection: "MOID Terra",
+  semi_major_axis: "Semi-asse maggiore",
+  eccentricity: "Eccentricita'",
+  inclination: "Inclinazione",
+  orbital_period: "Periodo orbitale",
+  perihelion_distance: "Perielio",
+  aphelion_distance: "Afelio",
+};
+
+function formatOrbitalLabel(key: string): string {
+  return ORBITAL_LABELS[key] ?? key.replaceAll("_", " ");
+}
+
+function formatOrbitalValue(key: string, value: unknown): string {
+  if (value == null) {
+    return "--";
+  }
+  if (typeof value === "object") {
+    const orbitClass = value as {
+      type?: unknown;
+      name?: unknown;
+      orbit_class_type?: unknown;
+      orbit_class_description?: unknown;
+    };
+    const type = orbitClass.type ?? orbitClass.orbit_class_type;
+    const name = orbitClass.name ?? orbitClass.orbit_class_description;
+    if (type || name) {
+      return [type, name].filter(Boolean).join(" - ");
+    }
+    return JSON.stringify(value);
+  }
+  const text = String(value);
+  if (key === "data_arc_in_days") {
+    return `${formatNumber(Number(text))} giorni`;
+  }
+  if (key === "observations_used") {
+    return `${formatNumber(Number(text))} osservazioni`;
+  }
+  if (key === "minimum_orbit_intersection" || key.endsWith("_distance") || key === "semi_major_axis") {
+    return `${Number(text).toFixed(4)} AU`;
+  }
+  if (key === "inclination") {
+    return `${Number(text).toFixed(2)} deg`;
+  }
+  if (key === "orbital_period") {
+    return `${formatNumber(Number(text), 1)} giorni`;
+  }
+  return text;
+}
+
+function getApproachStatus(value: string): "passato" | "previsto" {
+  const approachTime = new Date(value).getTime();
+  return approachTime > Date.now() ? "previsto" : "passato";
 }
 
 export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
@@ -180,6 +271,25 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
       { label: "MOID disponibili", value: formatNumber(withMoid.length), caption: "dato orbitale NASA se presente" },
     ];
   }, [visibleItems]);
+
+  const highlightedOrbitItems = useMemo(
+    () =>
+      [...visibleItems]
+        .sort((a, b) => {
+          const hazardDelta =
+            Number(b.is_potentially_hazardous_asteroid) -
+            Number(a.is_potentially_hazardous_asteroid);
+          if (hazardDelta !== 0) {
+            return hazardDelta;
+          }
+          return (
+            Number(a.close_approach.miss_distance.kilometers) -
+            Number(b.close_approach.miss_distance.kilometers)
+          );
+        })
+        .slice(0, 18),
+    [visibleItems],
+  );
 
   function goToSection(nextSection: PageSection) {
     setSection(nextSection);
@@ -357,12 +467,12 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
           <DashboardSkeleton />
         ) : (
           <>
-            <section className="content-section hero-grid" id="section-overview">
+            <section className="content-section overview-grid" id="section-overview">
               <div className="section-kicker">
                 <span>Panoramica</span>
                 <strong>{visibleItems.length} eventi nel range filtrato</strong>
               </div>
-              <div className="stats-column">
+              <div className="kpi-row">
                 {summaryCards.map((card) => (
                   <article className="stat-card" key={card.label}>
                     <div className="stat-label">{card.label}</div>
@@ -406,7 +516,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <div className="panel-head">
                     <div>
                       <div className="eyebrow subtle">Orbital data</div>
-                      <h2>Orbite, trail e piano inclinato</h2>
+                      <h2>Orbite e tracce di avvicinamento</h2>
                     </div>
                     <span className="meta-chip">AU scale</span>
                   </div>
@@ -423,10 +533,38 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <article className="state-card orbital-note">
                     <h3>Modello visuale</h3>
                     <p>
-                      Ellissi costruite da semi-asse maggiore, eccentricita' e inclinazione.
-                      Il trail animato mostra il percorso orbitale stimato, non una soluzione
-                      numerica JPL ad alta precisione.
+                      Le orbite chiuse vengono disegnate solo quando NeoWs espone elementi
+                      orbitali sufficienti. In assenza di quei campi, la scena mostra archi di
+                      avvicinamento stimati da distanza e velocita', non una soluzione JPL.
                     </p>
+                  </article>
+                  <article className="orbit-legend-card">
+                    <h3>Oggetti mostrati</h3>
+                    <p>Colori e numeri coincidono con le etichette nel grafico. Click per aprire la scheda NASA.</p>
+                    <div className="orbit-legend-list">
+                      {highlightedOrbitItems.slice(0, 10).map((item, index) => (
+                        <button
+                          key={item.event_id}
+                          className={classNames(
+                            "orbit-legend-row",
+                            item.is_potentially_hazardous_asteroid && "danger",
+                          )}
+                          onClick={() => openNeo(item)}
+                        >
+                          <span
+                            className="orbit-swatch"
+                            style={{ background: getOrbitPaletteColor(index) }}
+                          />
+                          <span>
+                            <strong>#{index + 1} {item.name}</strong>
+                            <small>
+                              {getOrbitClassType(item)} · {formatKilometers(Number(item.close_approach.miss_distance.kilometers))} km
+                            </small>
+                          </span>
+                          {item.is_potentially_hazardous_asteroid ? <em>PHA</em> : null}
+                        </button>
+                      ))}
+                    </div>
                   </article>
                 </div>
               </section>
@@ -589,6 +727,14 @@ function DetailContent({
     return <DashboardSkeleton compact />;
   }
 
+  const diameterMin = detail.estimated_diameter.kilometers.estimated_diameter_min;
+  const diameterMax = detail.estimated_diameter.kilometers.estimated_diameter_max;
+  const diameterRatio = Math.max(8, Math.min(100, diameterMax * 44));
+  const historicalCount = detail.close_approach_data.filter(
+    (entry) => entry.close_approach_date && getApproachStatus(entry.close_approach_date) === "passato",
+  ).length;
+  const predictedCount = detail.close_approach_data.length - historicalCount;
+
   return (
     <>
       <div className="panel-head">
@@ -612,21 +758,45 @@ function DetailContent({
           Apri scheda JPL
         </Link>
       </div>
+      <div className="source-callout">
+        <strong>Dati NASA NeoWs</strong>
+        <span>
+          Non sono dati mock: arrivano da `GET /api/neo/{detail.id}`, proxy FastAPI verso NASA.
+          Gli incontri futuri sono previsioni orbitali pubblicate dalla NASA, non eventi inventati.
+        </span>
+      </div>
       <div className="detail-grid">
         <article className="detail-panel">
           <h3>Dimensioni stimate</h3>
           <p>
-            Da {formatDiameterKm(detail.estimated_diameter.kilometers.estimated_diameter_min)} a{" "}
-            {formatDiameterKm(detail.estimated_diameter.kilometers.estimated_diameter_max)}
+            Da {formatDiameterKm(diameterMin)} a{" "}
+            {formatDiameterKm(diameterMax)}
           </p>
+          <div className="diameter-visual" aria-hidden="true">
+            <span style={{ width: `${diameterRatio}%` }} />
+          </div>
+          <div className="detail-facts">
+            <div>
+              <span>Magnitudine assoluta H</span>
+              <strong>{detail.absolute_magnitude_h ?? "--"}</strong>
+            </div>
+            <div>
+              <span>Sentry object</span>
+              <strong>{detail.is_sentry_object ? "Si" : "No"}</strong>
+            </div>
+            <div>
+              <span>Close approach nel record</span>
+              <strong>{detail.close_approach_data.length}</strong>
+            </div>
+          </div>
         </article>
         <article className="detail-panel">
           <h3>Dati orbitali</h3>
           <div className="key-value-list">
             {Object.entries(detail.orbital_data).slice(0, 8).map(([key, value]) => (
               <div key={key}>
-                <span>{key}</span>
-                <strong>{typeof value === "object" ? JSON.stringify(value) : String(value)}</strong>
+                <span>{formatOrbitalLabel(key)}</span>
+                <strong>{formatOrbitalValue(key, value)}</strong>
               </div>
             ))}
           </div>
@@ -635,17 +805,34 @@ function DetailContent({
       <article className="panel">
         <div className="panel-head">
           <div>
-            <div className="eyebrow subtle">Storico avvicinamenti</div>
-            <h2>Close approach data</h2>
+            <div className="eyebrow subtle">Passaggi NASA</div>
+            <h2>Close approach: passati e previsti</h2>
+            <p className="panel-copy">
+              La NASA restituisce un catalogo temporale: include osservazioni storiche e
+              incontri futuri previsti dal modello orbitale corrente.
+            </p>
           </div>
+          <span className="meta-chip">{historicalCount} passati · {predictedCount} previsti</span>
         </div>
         <div className="history-list">
+          <div className="history-row history-head">
+            <span>Data</span>
+            <span>Distanza Terra</span>
+            <span>Velocita'</span>
+            <span>Corpo</span>
+            <span>Tipo</span>
+          </div>
           {detail.close_approach_data.map((entry, index) => (
             <div className="history-row" key={`${entry.close_approach_date}-${index}`}>
               <span>{formatDate(entry.close_approach_date)}</span>
               <span>{entry.miss_distance?.kilometers ? `${formatKilometers(Number(entry.miss_distance.kilometers))} km` : "--"}</span>
               <span>{entry.relative_velocity?.kilometers_per_second ? `${Number(entry.relative_velocity.kilometers_per_second).toFixed(2)} km/s` : "--"}</span>
               <span>{entry.orbiting_body ?? "--"}</span>
+              <span>
+                <span className={classNames("time-pill", getApproachStatus(entry.close_approach_date) === "previsto" && "future")}>
+                  {getApproachStatus(entry.close_approach_date)}
+                </span>
+              </span>
             </div>
           ))}
         </div>
