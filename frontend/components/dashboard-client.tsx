@@ -28,6 +28,7 @@ import {
 } from "./charts";
 
 type Section = "dashboard" | "catalog" | "timeline" | "states" | "settings";
+type PageSection = "overview" | "orbits" | "catalog" | "info";
 
 interface DashboardClientProps {
   standaloneNeoId?: string;
@@ -86,10 +87,18 @@ function classNames(...classes: Array<string | false | null | undefined>): strin
   return classes.filter(Boolean).join(" ");
 }
 
+function getOrbitClassType(item: FeedEvent): string {
+  const orbitClass = item.orbital_data.orbit_class;
+  if (orbitClass && typeof orbitClass === "object" && "type" in orbitClass) {
+    return String((orbitClass as { type?: unknown }).type ?? "NEO");
+  }
+  return "NEO";
+}
+
 export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
   const defaults = useMemo(getDefaultRange, []);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [section, setSection] = useState<Section>("dashboard");
+  const [section, setSection] = useState<PageSection>("overview");
   const [hazardFilter, setHazardFilter] = useState<HazardFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("approach_date");
   const [range, setRange] = useState(defaults);
@@ -149,6 +158,35 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
       sortKey,
     );
   }, [feed, hazardFilter, sortKey]);
+
+  const orbitClassSummary = useMemo(() => {
+    const counts = new Map<string, number>();
+    visibleItems.forEach((item) => {
+      const orbitClass = getOrbitClassType(item);
+      counts.set(orbitClass, (counts.get(orbitClass) ?? 0) + 1);
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [visibleItems]);
+
+  const orbitalStats = useMemo(() => {
+    const withOrbit = visibleItems.filter((item) => item.orbital_data.semi_major_axis);
+    const withInclination = visibleItems.filter((item) => item.orbital_data.inclination);
+    const withMoid = visibleItems.filter((item) => item.orbital_data.minimum_orbit_intersection);
+    return [
+      { label: "Orbite visualizzate", value: formatNumber(visibleItems.length), caption: withOrbit.length ? "con elementi NeoWs dove disponibili" : "stimate da distanza e velocita'" },
+      { label: "Inclinazioni reali", value: formatNumber(withInclination.length), caption: "fallback visuale quando mancanti" },
+      { label: "MOID disponibili", value: formatNumber(withMoid.length), caption: "dato orbitale NASA se presente" },
+    ];
+  }, [visibleItems]);
+
+  function goToSection(nextSection: PageSection) {
+    setSection(nextSection);
+    document
+      .getElementById(`section-${nextSection}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function openNeo(event: FeedEvent) {
     if (standaloneNeoId) {
@@ -211,16 +249,15 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
         </div>
         <nav className="sidebar-nav">
           {[
-            ["dashboard", "Dashboard"],
+            ["overview", "Panoramica"],
+            ["orbits", "Vista orbitale"],
             ["catalog", "Catalogo"],
-            ["timeline", "Timeline"],
-            ["states", "Edge cases"],
-            ["settings", "Settings"],
+            ["info", "Info"],
           ].map(([value, label]) => (
             <button
               key={value}
               className={classNames("nav-button", section === value && "active")}
-              onClick={() => setSection(value as Section)}
+              onClick={() => goToSection(value as PageSection)}
             >
               {label}
             </button>
@@ -320,32 +357,82 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
           <DashboardSkeleton />
         ) : (
           <>
-            {(section === "dashboard" || section === "timeline") && (
-              <section className="hero-grid">
+            <section className="content-section hero-grid" id="section-overview">
+              <div className="section-kicker">
+                <span>Panoramica</span>
+                <strong>{visibleItems.length} eventi nel range filtrato</strong>
+              </div>
+              <div className="stats-column">
+                {summaryCards.map((card) => (
+                  <article className="stat-card" key={card.label}>
+                    <div className="stat-label">{card.label}</div>
+                    <div className="stat-value">{card.value}</div>
+                    <div className="stat-caption">{card.caption}</div>
+                  </article>
+                ))}
+              </div>
+              <article className="panel orbit-classes-panel">
+                <div className="panel-head">
+                  <div>
+                    <div className="eyebrow subtle">Classi orbitali</div>
+                    <h2>Composizione del campione</h2>
+                  </div>
+                </div>
+                <div className="orbit-class-list">
+                  {orbitClassSummary.length ? (
+                    orbitClassSummary.map(([orbitClass, count]) => (
+                      <div className="orbit-class-row" key={orbitClass}>
+                        <span>{orbitClass}</span>
+                        <strong>{count}</strong>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="muted-copy">Classi non disponibili nel range corrente.</span>
+                  )}
+                </div>
+              </article>
+            </section>
+
+            <section className="content-section" id="section-orbits">
+              <div className="section-heading">
+                <div>
+                  <div className="eyebrow subtle">Vista orbitale</div>
+                  <h2>Sistema eliocentrico ricostruito</h2>
+                </div>
+                <span className="meta-chip">ECharts GL line3D</span>
+              </div>
+              <section className="hero-grid orbital-stage-grid">
                 <div className="hero-panel">
                   <div className="panel-head">
                     <div>
-                      <div className="eyebrow subtle">Vista orbitale</div>
-                      <h2>Approach cloud in 3D</h2>
+                      <div className="eyebrow subtle">Orbital data</div>
+                      <h2>Orbite, trail e piano inclinato</h2>
                     </div>
-                    <span className="meta-chip">ECharts GL</span>
+                    <span className="meta-chip">AU scale</span>
                   </div>
                   <Orbital3DChart data={visibleItems} />
                 </div>
                 <div className="stats-column">
-                  {summaryCards.map((card) => (
+                  {orbitalStats.map((card) => (
                     <article className="stat-card" key={card.label}>
                       <div className="stat-label">{card.label}</div>
                       <div className="stat-value">{card.value}</div>
                       <div className="stat-caption">{card.caption}</div>
                     </article>
                   ))}
+                  <article className="state-card orbital-note">
+                    <h3>Modello visuale</h3>
+                    <p>
+                      Ellissi costruite da semi-asse maggiore, eccentricita' e inclinazione.
+                      Il trail animato mostra il percorso orbitale stimato, non una soluzione
+                      numerica JPL ad alta precisione.
+                    </p>
+                  </article>
                 </div>
               </section>
-            )}
+            </section>
 
-            {(section === "dashboard" || section === "timeline") && (
-              <section className="charts-grid">
+            <section className="content-section charts-grid" id="section-analysis">
                 <article className="panel">
                   <div className="panel-head">
                     <div>
@@ -364,11 +451,9 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   </div>
                   <SizeDistributionChart data={visibleItems} />
                 </article>
-              </section>
-            )}
+            </section>
 
-            {(section === "dashboard" || section === "catalog") && (
-              <section className="panel">
+            <section className="content-section panel" id="section-catalog">
                 <div className="panel-head">
                   <div>
                     <div className="eyebrow subtle">Catalogo NEO</div>
@@ -419,30 +504,9 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                     ))}
                   </div>
                 )}
-              </section>
-            )}
+            </section>
 
-            {section === "states" && (
-              <section className="states-grid">
-                <StateCard
-                  title="Skeleton loader"
-                  description="Il caricamento del feed e del dettaglio mostra placeholder solidi invece di layout jump."
-                />
-                <StateCard
-                  title="Rate limit NASA"
-                  description="Se il backend riceve 429, il frontend mostra un messaggio chiaro senza mai colpire direttamente api.nasa.gov."
-                  emphasis="error"
-                />
-                <StateCard
-                  title="Input invalido"
-                  description="Le date vengono validate prima delle chiamate upstream e tornano con HTTP 400 e copy leggibile."
-                  emphasis="error"
-                />
-              </section>
-            )}
-
-            {section === "settings" && (
-              <section className="settings-grid">
+            <section className="content-section settings-grid" id="section-info">
                 <article className="panel">
                   <div className="panel-head">
                     <div>
@@ -453,6 +517,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <pre className="code-block">{`GET  /api/feed?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 GET  /api/neo/{id}
 GET  /api/health
+GET  /metrics
 POST /api/cache/invalidate`}</pre>
                 </article>
                 <article className="panel">
@@ -476,18 +541,18 @@ POST /api/cache/invalidate`}</pre>
                 <article className="panel panel-full">
                   <div className="panel-head">
                     <div>
-                      <div className="eyebrow subtle">Deployment note</div>
-                      <h2>API key e hosting</h2>
+                      <div className="eyebrow subtle">Info</div>
+                      <h2>API key, hosting e stati applicativi</h2>
                     </div>
                   </div>
                   <p className="settings-copy">
                     La chiave NASA vive soltanto nel backend tramite `NASA_API_KEY`.
                     GitHub Pages puo' ospitare solo il frontend statico: per la parte FastAPI
-                    serve un backend separato, ad esempio Render, Railway o Fly.io.
+                    serve un backend separato, ad esempio Render, Railway o Fly.io. Loading,
+                    rate limit e input non valido sono gestiti come stati della stessa dashboard.
                   </p>
                 </article>
-              </section>
-            )}
+            </section>
           </>
         )}
       </main>

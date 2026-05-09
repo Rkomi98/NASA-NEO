@@ -7,6 +7,14 @@ import type { FeedEvent } from "../lib/types";
 
 type EChartsModule = typeof import("echarts");
 type ChartOption = import("echarts").EChartsCoreOption;
+type OrbitPoint = [number, number, number];
+
+const PLANETS = [
+  { name: "Mercurio", semiMajorAxis: 0.387, eccentricity: 0.206, color: "#c6b09a", size: 5 },
+  { name: "Venere", semiMajorAxis: 0.723, eccentricity: 0.007, color: "#e7c172", size: 7 },
+  { name: "Terra", semiMajorAxis: 1, eccentricity: 0.017, color: "#5fb5ff", size: 9 },
+  { name: "Marte", semiMajorAxis: 1.524, eccentricity: 0.093, color: "#ff765e", size: 7 },
+];
 
 function useChart(
   buildOption: (echarts: EChartsModule) => ChartOption,
@@ -30,7 +38,8 @@ function useChart(
         const resize = () => instance?.resize();
         window.addEventListener("resize", resize);
         return () => window.removeEventListener("resize", resize);
-      } catch {
+      } catch (error) {
+        console.error("Chart render failed", error);
         if (mounted) {
           setFailed(true);
         }
@@ -62,31 +71,257 @@ function getSeriesData(data: FeedEvent[]) {
   }));
 }
 
+function formatCompactKm(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 1 : 2)}M km`;
+  }
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(0)}K km`;
+  }
+  return `${value.toFixed(0)} km`;
+}
+
+function formatChartDate(value: number | string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "short",
+  }).format(date);
+}
+
+function parseOrbitNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function getOrbitClassType(item: FeedEvent): string {
+  const orbitClass = item.orbital_data.orbit_class;
+  if (orbitClass && typeof orbitClass === "object" && "type" in orbitClass) {
+    return String((orbitClass as { type?: unknown }).type ?? "NEO");
+  }
+  return "NEO";
+}
+
+function getOrbitColor(item: FeedEvent): string {
+  if (item.is_potentially_hazardous_asteroid) {
+    return "#ff5760";
+  }
+  const orbitClass = getOrbitClassType(item).toUpperCase();
+  if (orbitClass.includes("ATE")) {
+    return "#f5a623";
+  }
+  if (orbitClass.includes("AMO")) {
+    return "#4ad7a8";
+  }
+  if (orbitClass.includes("APO")) {
+    return "#6ec1ff";
+  }
+  return "#d4a557";
+}
+
+function buildOrbitPath({
+  semiMajorAxis,
+  eccentricity,
+  inclinationDeg = 0,
+  phase = 0,
+  samples = 144,
+}: {
+  semiMajorAxis: number;
+  eccentricity: number;
+  inclinationDeg?: number;
+  phase?: number;
+  samples?: number;
+}): OrbitPoint[] {
+  const clampedEccentricity = Math.max(0, Math.min(0.92, eccentricity));
+  const inclination = (inclinationDeg * Math.PI) / 180;
+  const points: OrbitPoint[] = [];
+
+  for (let index = 0; index <= samples; index += 1) {
+    const angle = (index / samples) * Math.PI * 2 + phase;
+    const radius =
+      (semiMajorAxis * (1 - clampedEccentricity * clampedEccentricity)) /
+      (1 + clampedEccentricity * Math.cos(angle));
+    const x = radius * Math.cos(angle);
+    const yFlat = radius * Math.sin(angle);
+    points.push([
+      Number(x.toFixed(4)),
+      Number((yFlat * Math.cos(inclination)).toFixed(4)),
+      Number((yFlat * Math.sin(inclination)).toFixed(4)),
+    ]);
+  }
+
+  return points;
+}
+
+function estimateAsteroidPosition(item: FeedEvent, index: number): OrbitPoint {
+  const semiMajorAxis = parseOrbitNumber(item.orbital_data.semi_major_axis) ?? 1.4;
+  const eccentricity = parseOrbitNumber(item.orbital_data.eccentricity) ?? 0.2;
+  const inclination = parseOrbitNumber(item.orbital_data.inclination) ?? 0;
+  const orbitalPeriod = parseOrbitNumber(item.orbital_data.orbital_period) ?? 365;
+  const approachEpoch = item.close_approach.epoch_date_close_approach;
+  const daysSinceEpoch = (approachEpoch - Date.UTC(2000, 0, 1)) / 86400000;
+  const phase = ((daysSinceEpoch / orbitalPeriod) * Math.PI * 2 + index * 0.37) % (Math.PI * 2);
+  const path = buildOrbitPath({
+    semiMajorAxis,
+    eccentricity,
+    inclinationDeg: inclination,
+    phase,
+    samples: 1,
+  });
+  return path[0];
+}
+
+function buildAsteroidOrbit(item: FeedEvent, index: number) {
+  const semiMajorAxis =
+    parseOrbitNumber(item.orbital_data.semi_major_axis) ??
+    parseOrbitNumber(item.orbital_data.aphelion_distance) ??
+    Math.min(3.8, Math.max(0.72, Number(item.close_approach.miss_distance.astronomical ?? 1) + 1)) ??
+    1.6;
+  const eccentricity =
+    parseOrbitNumber(item.orbital_data.eccentricity) ??
+    Math.min(0.72, 0.12 + Number(item.close_approach.miss_distance.lunar ?? 8) / 120);
+  const inclination =
+    parseOrbitNumber(item.orbital_data.inclination) ??
+    Math.min(32, Number(item.close_approach.relative_velocity.kilometers_per_second) * 1.2);
+  const orbitalPeriod = parseOrbitNumber(item.orbital_data.orbital_period);
+  const moid = parseOrbitNumber(item.orbital_data.minimum_orbit_intersection);
+  const observations = parseOrbitNumber(item.orbital_data.observations_used);
+  const orbitClass = getOrbitClassType(item);
+  const phase = (index * Math.PI) / 11;
+
+  return {
+    name: item.name,
+    orbitClass,
+    color: getOrbitColor(item),
+    semiMajorAxis,
+    eccentricity,
+    inclination,
+    orbitalPeriod,
+    moid,
+    observations,
+    position: estimateAsteroidPosition(item, index),
+    diameter:
+      item.estimated_diameter.kilometers.estimated_diameter_max,
+    hazardous: item.is_potentially_hazardous_asteroid,
+    path: buildOrbitPath({
+      semiMajorAxis,
+      eccentricity,
+      inclinationDeg: inclination,
+      phase,
+    }),
+  };
+}
+
 export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
   const [ref, failed] = useChart(
     (echarts) => {
       const points = getSeriesData(data);
       return {
         backgroundColor: "transparent",
-        tooltip: { trigger: "item" },
-        grid: { left: 42, right: 12, top: 20, bottom: 34 },
-        xAxis: { type: "time" },
-        yAxis: { type: "value", name: "km" },
+        tooltip: {
+          trigger: "item",
+          confine: true,
+          backgroundColor: "rgba(255, 255, 255, 0.96)",
+          borderColor: "rgba(255, 87, 96, 0.7)",
+          borderWidth: 1,
+          textStyle: { color: "#0b1b3c", fontSize: 12 },
+          formatter: (params: { data?: unknown[] }) => {
+            const value = params.data;
+            if (!Array.isArray(value)) {
+              return "";
+            }
+            const missKm = Number(value[2]);
+            const missLunar = Number(value[3]);
+            const velocity = Number(value[4]);
+            const diameter = Number(value[5]);
+            return [
+              `<strong>${value[6] ?? "Asteroide"}</strong>`,
+              `Data: ${formatChartDate(Number(value[0]))}`,
+              `Distanza: ${formatCompactKm(missKm)}`,
+              `Lunar distance: ${Number.isFinite(missLunar) ? missLunar.toFixed(2) : "--"} LD`,
+              `Velocita': ${Number.isFinite(velocity) ? velocity.toFixed(2) : "--"} km/s`,
+              `Diametro max: ${Number.isFinite(diameter) ? diameter.toFixed(2) : "--"} km`,
+              `Rischio: ${value[7] ? "potenziale" : "basso"}`,
+            ].join("<br/>");
+          },
+        },
+        grid: { left: 96, right: 24, top: 36, bottom: 58, containLabel: true },
+        xAxis: {
+          type: "time",
+          name: "Data close approach",
+          nameLocation: "middle",
+          nameGap: 34,
+          nameTextStyle: {
+            color: "rgba(175, 175, 199, 0.78)",
+            fontWeight: 600,
+          },
+          axisLabel: {
+            color: "rgba(175, 175, 199, 0.86)",
+            formatter: (value: number) => formatChartDate(value),
+          },
+          axisLine: { lineStyle: { color: "rgba(175, 175, 199, 0.52)" } },
+          axisTick: { lineStyle: { color: "rgba(175, 175, 199, 0.38)" } },
+          splitLine: { show: false },
+        },
+        yAxis: {
+          type: "value",
+          name: "Distanza Terra (milioni km)",
+          nameLocation: "middle",
+          nameRotate: 90,
+          nameGap: 62,
+          nameTextStyle: {
+            color: "rgba(175, 175, 199, 0.78)",
+            fontWeight: 600,
+          },
+          axisLabel: {
+            color: "rgba(175, 175, 199, 0.86)",
+            formatter: (value: number) => `${value.toFixed(0)}M`,
+          },
+          axisLine: { show: true, lineStyle: { color: "rgba(175, 175, 199, 0.52)" } },
+          axisTick: { show: true, lineStyle: { color: "rgba(175, 175, 199, 0.38)" } },
+          splitLine: { lineStyle: { color: "rgba(175, 175, 199, 0.18)" } },
+        },
         series: [
           {
+            name: "Distanza",
             type: "scatter",
             data: points.map((point) => [
               point.epoch,
+              point.missKm / 1_000_000,
               point.missKm,
-              point.name,
+              point.missLunar,
+              point.velocity,
               point.diameterMax,
+              point.name,
+              point.hazardous,
             ]),
             itemStyle: {
               color: (params: { dataIndex: number }) =>
                 points[params.dataIndex]?.hazardous ? "#ff5760" : "#6ec1ff",
+              borderColor: "#05060f",
+              borderWidth: 1,
             },
             symbolSize: (value: number[]) =>
-              Math.max(8, Math.min(28, value[3] * 18)),
+              Math.max(8, Math.min(28, value[5] * 18)),
+            emphasis: {
+              scale: 1.35,
+              itemStyle: {
+                shadowBlur: 18,
+                shadowColor: "rgba(255, 255, 255, 0.24)",
+              },
+            },
           },
         ],
       };
@@ -167,35 +402,161 @@ export function SizeDistributionChart({ data }: { data: FeedEvent[] }) {
 export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
   const [ref, failed] = useChart(
     () => {
-      const points = getSeriesData(data);
-      if (!points.length) {
+      const items = data.slice(0, 64);
+      const asteroidOrbits = items.map(buildAsteroidOrbit);
+      if (!asteroidOrbits.length) {
         return {};
       }
-      const firstEpoch = points[0].epoch;
+      const planetOrbits = PLANETS.map((planet) => ({
+        ...planet,
+        path: buildOrbitPath({
+          semiMajorAxis: planet.semiMajorAxis,
+          eccentricity: planet.eccentricity,
+          samples: 180,
+        }),
+      }));
+
       return {
-        tooltip: { trigger: "item" },
-        xAxis3D: { type: "value", name: "giorni" },
-        yAxis3D: { type: "value", name: "LD" },
-        zAxis3D: { type: "value", name: "km/s" },
+        backgroundColor: "#03050d",
+        tooltip: {
+          trigger: "item",
+          formatter: (params: { seriesName?: string; data?: { value?: unknown[] } }) => {
+            const value = params.data?.value;
+            if (!Array.isArray(value)) {
+              return params.seriesName ?? "";
+            }
+            return [
+              `<strong>${value[3] ?? params.seriesName}</strong>`,
+              `Classe: ${value[4] ?? "--"}`,
+              `a: ${value[5] ?? "--"} AU`,
+              `e: ${value[6] ?? "--"}`,
+              `i: ${value[7] ?? "--"} deg`,
+              `MOID: ${value[8] ?? "--"} AU`,
+            ].join("<br/>");
+          },
+        },
+        xAxis3D: {
+          type: "value",
+          name: "X AU",
+          min: -4,
+          max: 4,
+          axisLine: { lineStyle: { color: "rgba(255,255,255,0.28)" } },
+          axisLabel: { color: "rgba(255,255,255,0.44)" },
+          splitLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
+        },
+        yAxis3D: {
+          type: "value",
+          name: "Y AU",
+          min: -4,
+          max: 4,
+          axisLine: { lineStyle: { color: "rgba(255,255,255,0.28)" } },
+          axisLabel: { color: "rgba(255,255,255,0.44)" },
+          splitLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
+        },
+        zAxis3D: {
+          type: "value",
+          name: "Incl.",
+          min: -1.6,
+          max: 1.6,
+          axisLine: { lineStyle: { color: "rgba(255,255,255,0.22)" } },
+          axisLabel: { color: "rgba(255,255,255,0.38)" },
+          splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+        },
         grid3D: {
-          boxWidth: 120,
-          boxDepth: 80,
-          environment: "#05060f",
+          boxWidth: 180,
+          boxDepth: 180,
+          boxHeight: 70,
+          environment: "#03050d",
+          axisPointer: { show: false },
+          light: {
+            main: { intensity: 1.5, shadow: true },
+            ambient: { intensity: 0.25 },
+          },
+          postEffect: {
+            enable: true,
+            bloom: { enable: true, bloomIntensity: 0.24 },
+          },
           viewControl: {
             autoRotate: true,
-            distance: 180,
+            autoRotateSpeed: 2.6,
+            distance: 235,
+            alpha: 38,
+            beta: 32,
+            damping: 0.78,
           },
         },
         series: [
+          ...planetOrbits.map((orbit) => ({
+            name: `${orbit.name} orbit`,
+            type: "line3D",
+            coordinateSystem: "cartesian3D",
+            data: orbit.path,
+            lineStyle: {
+              width: orbit.name === "Terra" ? 2.4 : 1.4,
+              color: orbit.color,
+              opacity: orbit.name === "Terra" ? 0.8 : 0.38,
+            },
+          })),
           {
+            name: "Pianeti",
             type: "scatter3D",
-            data: points.map((point) => [
-              (point.epoch - firstEpoch) / 86400000,
-              point.missLunar,
-              point.velocity,
-              point.diameterMax,
-            ]),
-            symbolSize: (value: number[]) => Math.max(8, Math.min(24, value[3] * 18)),
+            coordinateSystem: "cartesian3D",
+            data: PLANETS.map((planet, index) => {
+              const path = planetOrbits[index].path;
+              const point = path[Math.floor(path.length * 0.12)];
+              return {
+                value: [...point, planet.name, "Planet", planet.semiMajorAxis, planet.eccentricity, 0, "--"],
+                itemStyle: { color: planet.color },
+              };
+            }),
+            symbolSize: (value: unknown[]) =>
+              PLANETS.find((planet) => planet.name === value[3])?.size ?? 7,
+          },
+          {
+            name: "Sole",
+            type: "scatter3D",
+            coordinateSystem: "cartesian3D",
+            data: [{ value: [0, 0, 0, "Sole", "Star", "--", "--", "--", "--"] }],
+            symbolSize: 18,
+            itemStyle: { color: "#ffd166", opacity: 1 },
+          },
+          ...asteroidOrbits.map((orbit) => ({
+            name: orbit.name,
+            type: "line3D",
+            coordinateSystem: "cartesian3D",
+            data: orbit.path,
+            lineStyle: {
+              color: orbit.color,
+              opacity: orbit.hazardous ? 0.42 : 0.2,
+              width: orbit.hazardous ? 1.8 : 1,
+            },
+            silent: true,
+          })),
+          {
+            name: "Asteroidi",
+            type: "scatter3D",
+            coordinateSystem: "cartesian3D",
+            data: asteroidOrbits.map((orbit) => ({
+              value: [
+                ...orbit.position,
+                orbit.name,
+                orbit.orbitClass,
+                orbit.semiMajorAxis.toFixed(2),
+                orbit.eccentricity.toFixed(2),
+                orbit.inclination.toFixed(1),
+                orbit.moid?.toFixed(3) ?? "--",
+                orbit.observations ?? "--",
+                orbit.orbitalPeriod?.toFixed(0) ?? "--",
+              ],
+              itemStyle: {
+                color: orbit.color,
+                opacity: orbit.hazardous ? 1 : 0.78,
+              },
+            })),
+            symbolSize: (value: unknown[]) => {
+              const diameter = asteroidOrbits.find((orbit) => orbit.name === value[3])?.diameter ?? 0.12;
+              return Math.max(5, Math.min(18, diameter * 14));
+            },
           },
         ],
       };
