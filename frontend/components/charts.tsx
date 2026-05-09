@@ -142,10 +142,34 @@ function getOrbitPaletteColor(index: number): string {
   return palette[index % palette.length];
 }
 
+function degToRad(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function getEarthAngle(epochMs: number): number {
+  const daysSinceJ2000 = (epochMs - Date.UTC(2000, 0, 1, 12)) / 86400000;
+  return ((daysSinceJ2000 / 365.256) * Math.PI * 2) % (Math.PI * 2);
+}
+
+function getEarthPosition(epochMs: number): OrbitPoint {
+  const angle = getEarthAngle(epochMs);
+  return [
+    Number(Math.cos(angle).toFixed(4)),
+    Number(Math.sin(angle).toFixed(4)),
+    0,
+  ];
+}
+
+function distance3D(a: OrbitPoint, b: OrbitPoint): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
 function buildOrbitPath({
   semiMajorAxis,
   eccentricity,
   inclinationDeg = 0,
+  ascendingNodeDeg = 0,
+  perihelionArgumentDeg = 0,
   phase = 0,
   samples = 144,
   closed = true,
@@ -154,6 +178,8 @@ function buildOrbitPath({
   semiMajorAxis: number;
   eccentricity: number;
   inclinationDeg?: number;
+  ascendingNodeDeg?: number;
+  perihelionArgumentDeg?: number;
   phase?: number;
   samples?: number;
   closed?: boolean;
@@ -161,6 +187,8 @@ function buildOrbitPath({
 }): OrbitPoint[] {
   const clampedEccentricity = Math.max(0, Math.min(0.92, eccentricity));
   const inclination = (inclinationDeg * Math.PI) / 180;
+  const ascendingNode = degToRad(ascendingNodeDeg);
+  const perihelionArgument = degToRad(perihelionArgumentDeg);
   const points: OrbitPoint[] = [];
 
   const steps = closed ? samples : Math.max(2, samples);
@@ -171,34 +199,59 @@ function buildOrbitPath({
     const radius =
       (semiMajorAxis * (1 - clampedEccentricity * clampedEccentricity)) /
       (1 + clampedEccentricity * Math.cos(angle));
-    const x = radius * Math.cos(angle);
-    const yFlat = radius * Math.sin(angle);
+    const argument = perihelionArgument + angle;
+    const x =
+      radius *
+      (Math.cos(ascendingNode) * Math.cos(argument) -
+        Math.sin(ascendingNode) * Math.sin(argument) * Math.cos(inclination));
+    const yFlat =
+      radius *
+      (Math.sin(ascendingNode) * Math.cos(argument) +
+        Math.cos(ascendingNode) * Math.sin(argument) * Math.cos(inclination));
+    const z = radius * Math.sin(argument) * Math.sin(inclination);
     points.push([
       Number(x.toFixed(4)),
-      Number((yFlat * Math.cos(inclination)).toFixed(4)),
-      Number((yFlat * Math.sin(inclination)).toFixed(4)),
+      Number(yFlat.toFixed(4)),
+      Number(z.toFixed(4)),
     ]);
   }
 
   return points;
 }
 
-function estimateAsteroidPosition(item: FeedEvent, index: number): OrbitPoint {
-  const semiMajorAxis = parseOrbitNumber(item.orbital_data.semi_major_axis) ?? 1.4;
-  const eccentricity = parseOrbitNumber(item.orbital_data.eccentricity) ?? 0.2;
-  const inclination = parseOrbitNumber(item.orbital_data.inclination) ?? 0;
-  const orbitalPeriod = parseOrbitNumber(item.orbital_data.orbital_period) ?? 365;
-  const approachEpoch = item.close_approach.epoch_date_close_approach;
-  const daysSinceEpoch = (approachEpoch - Date.UTC(2000, 0, 1)) / 86400000;
-  const phase = ((daysSinceEpoch / orbitalPeriod) * Math.PI * 2 + index * 0.37) % (Math.PI * 2);
-  const path = buildOrbitPath({
-    semiMajorAxis,
-    eccentricity,
-    inclinationDeg: inclination,
-    phase,
-    samples: 1,
+function getClosestPoint(path: OrbitPoint[], target: OrbitPoint): OrbitPoint {
+  return path.reduce((closest, point) =>
+    distance3D(point, target) < distance3D(closest, target) ? point : closest,
+  );
+}
+
+function buildCloseApproachTrace(item: FeedEvent, index: number): OrbitPoint[] {
+  const earthAngle = getEarthAngle(item.close_approach.epoch_date_close_approach);
+  const earth = getEarthPosition(item.close_approach.epoch_date_close_approach);
+  const tangent: OrbitPoint = [
+    -Math.sin(earthAngle),
+    Math.cos(earthAngle),
+    0,
+  ];
+  const outward: OrbitPoint = [
+    Math.cos(earthAngle),
+    Math.sin(earthAngle),
+    0,
+  ];
+  const missAu = Number(item.close_approach.miss_distance.astronomical ?? 0.04);
+  const visibleOffset = Math.max(0.035, Math.min(0.16, missAu));
+  const trackLength = Math.max(0.16, Math.min(0.42, visibleOffset * 3.4));
+  const side = index % 2 === 0 ? 1 : -1;
+  const vertical = ((index % 5) - 2) * 0.018;
+
+  return Array.from({ length: 28 }, (_, step) => {
+    const t = step / 27 - 0.5;
+    return [
+      Number((earth[0] + tangent[0] * t * trackLength + outward[0] * visibleOffset * side).toFixed(4)),
+      Number((earth[1] + tangent[1] * t * trackLength + outward[1] * visibleOffset * side).toFixed(4)),
+      Number((vertical + Math.sin(t * Math.PI) * visibleOffset * 0.25).toFixed(4)),
+    ];
   });
-  return path[0];
 }
 
 function buildAsteroidOrbit(item: FeedEvent, index: number) {
@@ -216,12 +269,27 @@ function buildAsteroidOrbit(item: FeedEvent, index: number) {
   const inclination =
     parseOrbitNumber(item.orbital_data.inclination) ??
     Math.min(32, Number(item.close_approach.relative_velocity.kilometers_per_second) * 1.2);
+  const ascendingNode = parseOrbitNumber(item.orbital_data.ascending_node_longitude) ?? 0;
+  const perihelionArgument = parseOrbitNumber(item.orbital_data.perihelion_argument) ?? 0;
   const orbitalPeriod = parseOrbitNumber(item.orbital_data.orbital_period);
   const moid = parseOrbitNumber(item.orbital_data.minimum_orbit_intersection);
   const observations = parseOrbitNumber(item.orbital_data.observations_used);
   const orbitClass = getOrbitClassType(item);
-  const phase = (index * Math.PI) / 11;
   const samples = hasRealElements ? 144 : 24;
+  const path = hasRealElements
+    ? buildOrbitPath({
+        semiMajorAxis,
+        eccentricity,
+        inclinationDeg: inclination,
+        ascendingNodeDeg: ascendingNode,
+        perihelionArgumentDeg: perihelionArgument,
+        samples,
+      })
+    : buildCloseApproachTrace(item, index);
+  const earthPosition = getEarthPosition(item.close_approach.epoch_date_close_approach);
+  const position = hasRealElements
+    ? getClosestPoint(path, earthPosition)
+    : path[Math.floor(path.length / 2)];
 
   return {
     rank: index + 1,
@@ -235,19 +303,12 @@ function buildAsteroidOrbit(item: FeedEvent, index: number) {
     moid,
     observations,
     hasRealElements,
-    position: estimateAsteroidPosition(item, index),
+    position,
     diameter:
       item.estimated_diameter.kilometers.estimated_diameter_max,
     hazardous: item.is_potentially_hazardous_asteroid,
-    path: buildOrbitPath({
-      semiMajorAxis,
-      eccentricity,
-      inclinationDeg: inclination,
-      phase,
-      samples,
-      closed: hasRealElements,
-      arc: hasRealElements ? Math.PI * 2 : Math.PI * 0.46,
-    }),
+    visualMode: hasRealElements ? "Orbita NASA orientata" : "Traccia close approach",
+    path,
   };
 }
 
@@ -472,6 +533,7 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
             }
             return [
               `<strong>${value[3] ?? params.seriesName}</strong>`,
+              `${value[9] ?? "Vista orbitale"}`,
               `Classe: ${value[4] ?? "--"}`,
               `a: ${value[5] ?? "--"} AU`,
               `e: ${value[6] ?? "--"}`,
@@ -595,6 +657,7 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
                 orbit.eccentricity.toFixed(2),
                 orbit.inclination.toFixed(1),
                 orbit.moid?.toFixed(3) ?? "--",
+                orbit.visualMode,
                 orbit.observations ?? "--",
                 orbit.orbitalPeriod?.toFixed(0) ?? "--",
               ],

@@ -135,6 +135,11 @@ const ORBITAL_LABELS: Record<string, string> = {
   semi_major_axis: "Semi-asse maggiore",
   eccentricity: "Eccentricita'",
   inclination: "Inclinazione",
+  ascending_node_longitude: "Nodo ascendente",
+  perihelion_argument: "Argomento del perielio",
+  mean_anomaly: "Anomalia media",
+  epoch_osculation: "Epoch osculation",
+  equinox: "Equinozio",
   orbital_period: "Periodo orbitale",
   perihelion_distance: "Perielio",
   aphelion_distance: "Afelio",
@@ -172,7 +177,7 @@ function formatOrbitalValue(key: string, value: unknown): string {
   if (key === "minimum_orbit_intersection" || key.endsWith("_distance") || key === "semi_major_axis") {
     return `${Number(text).toFixed(4)} AU`;
   }
-  if (key === "inclination") {
+  if (key === "inclination" || key === "ascending_node_longitude" || key === "perihelion_argument" || key === "mean_anomaly") {
     return `${Number(text).toFixed(2)} deg`;
   }
   if (key === "orbital_period") {
@@ -262,12 +267,16 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
   }, [visibleItems]);
 
   const orbitalStats = useMemo(() => {
-    const withOrbit = visibleItems.filter((item) => item.orbital_data.semi_major_axis);
+    const withOrbit = visibleItems.filter(
+      (item) => item.orbital_data.semi_major_axis && item.orbital_data.eccentricity,
+    );
     const withInclination = visibleItems.filter((item) => item.orbital_data.inclination);
     const withMoid = visibleItems.filter((item) => item.orbital_data.minimum_orbit_intersection);
+    const closeApproachOnly = Math.max(0, visibleItems.length - withOrbit.length);
     return [
-      { label: "Orbite visualizzate", value: formatNumber(visibleItems.length), caption: withOrbit.length ? "con elementi NeoWs dove disponibili" : "stimate da distanza e velocita'" },
-      { label: "Inclinazioni reali", value: formatNumber(withInclination.length), caption: "fallback visuale quando mancanti" },
+      { label: "Orbite NASA complete", value: formatNumber(withOrbit.length), caption: "ellissi disegnate solo con a + e" },
+      { label: "Tracce close approach", value: formatNumber(closeApproachOnly), caption: "marker vicino alla Terra del passaggio" },
+      { label: "Inclinazioni reali", value: formatNumber(withInclination.length), caption: "usate solo quando NASA le espone" },
       { label: "MOID disponibili", value: formatNumber(withMoid.length), caption: "dato orbitale NASA se presente" },
     ];
   }, [visibleItems]);
@@ -533,9 +542,10 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <article className="state-card orbital-note">
                     <h3>Modello visuale</h3>
                     <p>
-                      Le orbite chiuse vengono disegnate solo quando NeoWs espone elementi
-                      orbitali sufficienti. In assenza di quei campi, la scena mostra archi di
-                      avvicinamento stimati da distanza e velocita', non una soluzione JPL.
+                      Le ellissi chiuse compaiono solo quando NeoWs fornisce semi-asse ed
+                      eccentricita'. Se quei campi mancano, il grafico non inventa un'orbita:
+                      disegna una traccia tratteggiata vicino alla Terra nella data del close
+                      approach.
                     </p>
                   </article>
                   <article className="orbit-legend-card">
@@ -622,7 +632,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                       >
                         <span className="table-name">
                           {item.name}
-                          <small>{item.orbital_data.orbit_class ? String((item.orbital_data.orbit_class as { type?: string }).type ?? "") : ""}</small>
+                          <small>{getOrbitClassType(item)}</small>
                         </span>
                         <span>{formatShortDate(item.close_approach.close_approach_date)}</span>
                         <span>{formatKilometers(Number(item.close_approach.miss_distance.kilometers))} km</span>
@@ -819,7 +829,7 @@ function DetailContent({
             <span>Data</span>
             <span>Distanza Terra</span>
             <span>Velocita'</span>
-            <span>Corpo</span>
+            <span>Corpo orbitato</span>
             <span>Tipo</span>
           </div>
           {detail.close_approach_data.map((entry, index) => (
@@ -827,7 +837,7 @@ function DetailContent({
               <span>{formatDate(entry.close_approach_date)}</span>
               <span>{entry.miss_distance?.kilometers ? `${formatKilometers(Number(entry.miss_distance.kilometers))} km` : "--"}</span>
               <span>{entry.relative_velocity?.kilometers_per_second ? `${Number(entry.relative_velocity.kilometers_per_second).toFixed(2)} km/s` : "--"}</span>
-              <span>{entry.orbiting_body ?? "--"}</span>
+              <span>{entry.orbiting_body ? `Rispetto a ${entry.orbiting_body}` : "--"}</span>
               <span>
                 <span className={classNames("time-pill", getApproachStatus(entry.close_approach_date) === "previsto" && "future")}>
                   {getApproachStatus(entry.close_approach_date)}
