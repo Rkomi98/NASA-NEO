@@ -24,6 +24,7 @@ Thumbs.db
 node_modules/
 .claude/
 arkemis/
+backend/cache/
 dist/
 build/
 coverage/

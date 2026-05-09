@@ -8,9 +8,11 @@ from fastapi.responses import JSONResponse
 from app.api.routes_cache import router as cache_router
 from app.api.routes_feed import router as feed_router
 from app.api.routes_health import router as health_router
+from app.api.routes_metrics import router as metrics_router
 from app.api.routes_neo import router as neo_router
 from app.core.config import get_settings
 from app.core.errors import APIError
+from app.observability import MetricsMiddleware
 from app.services.cache_service import CacheService
 from app.services.nasa_client import NasaNeoClient
 from app.services.neo_service import NeoService
@@ -43,10 +45,14 @@ settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
+    allow_origin_regex=settings.allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(MetricsMiddleware)
+
+
 @app.exception_handler(APIError)
 async def api_error_handler(_: Request, exc: APIError) -> JSONResponse:
     return JSONResponse(
@@ -70,3 +76,4 @@ app.include_router(feed_router)
 app.include_router(neo_router)
 app.include_router(health_router)
 app.include_router(cache_router)
+app.include_router(metrics_router)

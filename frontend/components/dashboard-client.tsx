@@ -253,9 +253,18 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
           </div>
           <button
             className="theme-toggle"
+            data-mode={theme}
             onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            aria-label={`Attiva modalita' ${theme === "dark" ? "light" : "dark"}`}
+            aria-pressed={theme === "dark"}
           >
-            {theme === "dark" ? "NASA paper" : "Spazio"}
+            <span className="theme-toggle-track" aria-hidden="true">
+              <span className="theme-toggle-knob" />
+            </span>
+            <span className="theme-toggle-copy">
+              <span>Dark mode</span>
+              <strong>{theme === "dark" ? "On" : "Off"}</strong>
+            </span>
           </button>
         </header>
 

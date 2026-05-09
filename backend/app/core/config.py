@@ -14,8 +14,11 @@ class Settings(BaseSettings):
         default_factory=lambda: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
         ]
     )
+    allowed_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1):[0-9]+$"
     feed_ttl_seconds: int = 60 * 60 * 12
     neo_ttl_seconds: int = 60 * 60 * 72
     max_days: int = 365

@@ -7,12 +7,16 @@ import type {
 } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = init?.body
+    ? {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      }
+    : init?.headers;
+
   const response = await fetch(`${BACKEND_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
     cache: "no-store",
   });
 

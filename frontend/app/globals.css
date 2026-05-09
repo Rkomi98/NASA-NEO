@@ -229,6 +229,74 @@ h1 em {
   background: var(--surface);
 }
 
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 148px;
+  padding: 8px 10px;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: var(--surface-strong);
+}
+
+.theme-toggle-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background:
+    linear-gradient(135deg, rgba(110, 193, 255, 0.2), rgba(255, 61, 128, 0.18)),
+    var(--bg-2);
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--text);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.26);
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.theme-toggle[data-mode="dark"] .theme-toggle-knob {
+  transform: translateX(20px);
+  background: var(--accent-2);
+}
+
+.theme-toggle-copy {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+  line-height: 1;
+}
+
+.theme-toggle-copy span {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.theme-toggle-copy strong {
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
 .filters-bar {
   flex-wrap: wrap;
   padding: 14px 18px;
