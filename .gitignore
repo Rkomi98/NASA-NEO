@@ -1,0 +1,56 @@
+# --- OS e sistema ---
+.DS_Store
+.DS_Store?
+Thumbs.db
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- File temporanei e lock ---
+*.log
+*.tmp
+*.temp
+
+# --- Secrets e config locali ---
+.env
+.env.*
+!.env.example
+
+# --- Node / JS / TS ---
+node_modules/
+.claude/
+arkemis/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.parcel-cache/
+.yarn/
+.pnp/
+*.log
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc.*
+*.py,cover
+.python-version
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+poetry.lock
+
