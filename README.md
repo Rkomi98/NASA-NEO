@@ -6,10 +6,13 @@
 </p>
 
 <p align="center">
-  <img alt="Frontend" src="https://img.shields.io/badge/Frontend-Next.js-111827?style=for-the-badge&logo=nextdotjs&logoColor=white">
-  <img alt="Backend" src="https://img.shields.io/badge/Backend-FastAPI-0f766e?style=for-the-badge&logo=fastapi&logoColor=white">
-  <img alt="Charts" src="https://img.shields.io/badge/Charts-ECharts-991b1b?style=for-the-badge&logo=apacheecharts&logoColor=white">
-  <img alt="Data Source" src="https://img.shields.io/badge/Data%20Source-NASA%20NeoWs-1d4ed8?style=for-the-badge">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=nextdotjs&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Proxy-009688?style=flat-square&logo=fastapi&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript&logoColor=white">
+  <img alt="Python" src="https://img.shields.io/badge/Python-Backend-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="ECharts" src="https://img.shields.io/badge/Apache%20ECharts-Visuals-AA344D?style=flat-square&logo=apacheecharts&logoColor=white">
+  <img alt="NASA NeoWs" src="https://img.shields.io/badge/NASA-NeoWs-0B3D91?style=flat-square&logo=nasa&logoColor=white">
+  <img alt="Cache" src="https://img.shields.io/badge/Cache-File--based-5B6470?style=flat-square">
 </p>
 
 <p align="center">
