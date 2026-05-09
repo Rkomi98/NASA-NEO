@@ -51,6 +51,9 @@
   </tr>
 </table>
 
+<img width="729" height="322" alt="image" src="https://github.com/user-attachments/assets/174d3d9e-48b0-4ef7-bce8-0c7bd27463a3" />
+_Figura 01: Piccola ricostruzione delle orbite di due asteroidi nel mese di Maggio_
+
 ## **Progetto In 30 Secondi**
 
 Arkemis NEO Dashboard prende i dati grezzi di **NASA NeoWs** e li trasforma in un’esperienza leggibile, filtrabile e visivamente forte.  
