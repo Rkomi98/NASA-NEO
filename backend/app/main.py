@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -70,6 +70,11 @@ async def api_error_handler(_: Request, exc: APIError) -> JSONResponse:
 @app.get("/")
 async def root() -> dict:
     return {"name": settings.app_name, "status": "ok"}
+
+
+@app.head("/", include_in_schema=False)
+async def root_head() -> Response:
+    return Response(status_code=200)
 
 
 app.include_router(feed_router)

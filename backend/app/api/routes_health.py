@@ -9,8 +9,7 @@ from app.services.nasa_client import NasaNeoClient
 router = APIRouter(tags=["health"])
 
 
-@router.get("/api/health", response_model=HealthResponse)
-async def get_health(
+async def build_health_response(
     cache_service: CacheService = Depends(get_cache_service),
     nasa_client: NasaNeoClient = Depends(get_nasa_client),
 ) -> HealthResponse:
@@ -26,3 +25,19 @@ async def get_health(
             "last_request_at": upstream.get("last_request_at"),
         },
     )
+
+
+@router.get("/api/health", response_model=HealthResponse)
+async def get_health_api(
+    cache_service: CacheService = Depends(get_cache_service),
+    nasa_client: NasaNeoClient = Depends(get_nasa_client),
+) -> HealthResponse:
+    return await build_health_response(cache_service, nasa_client)
+
+
+@router.get("/health", response_model=HealthResponse, include_in_schema=False)
+async def get_health_compat(
+    cache_service: CacheService = Depends(get_cache_service),
+    nasa_client: NasaNeoClient = Depends(get_nasa_client),
+) -> HealthResponse:
+    return await build_health_response(cache_service, nasa_client)
