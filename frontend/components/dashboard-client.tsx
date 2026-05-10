@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
+import logo from "../../assets/logo.svg";
 import { getFeed, getHealth, getNeo } from "../lib/api";
 import { DEFAULT_DAYS, HAZARD_FILTERS, SORT_OPTIONS } from "../lib/constants";
 import {
@@ -397,7 +399,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark" />
+          <Image className="brand-logo" src={logo} alt="Arkemis NEO logo" priority />
           <div>
             <div className="brand-name">ARKEMIS</div>
             <div className="brand-sub">NEO Observatory</div>
@@ -427,6 +429,21 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
           <div className="status-meta">
             Backend only, NASA never exposed to the browser.
           </div>
+          <button
+            className="theme-toggle"
+            data-mode={theme}
+            onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            aria-label={`Attiva modalita' ${theme === "dark" ? "light" : "dark"}`}
+            aria-pressed={theme === "dark"}
+          >
+            <span className="theme-toggle-track" aria-hidden="true">
+              <span className="theme-toggle-knob" />
+            </span>
+            <span className="theme-toggle-copy">
+              <span>Dark mode</span>
+              <strong>{theme === "dark" ? "On" : "Off"}</strong>
+            </span>
+          </button>
         </div>
       </aside>
 
@@ -444,21 +461,6 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
               editoriale ispirata al mock Arkemis.
             </p>
           </div>
-          <button
-            className="theme-toggle"
-            data-mode={theme}
-            onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-            aria-label={`Attiva modalita' ${theme === "dark" ? "light" : "dark"}`}
-            aria-pressed={theme === "dark"}
-          >
-            <span className="theme-toggle-track" aria-hidden="true">
-              <span className="theme-toggle-knob" />
-            </span>
-            <span className="theme-toggle-copy">
-              <span>Dark mode</span>
-              <strong>{theme === "dark" ? "On" : "Off"}</strong>
-            </span>
-          </button>
         </header>
 
         <section className="filters-bar">

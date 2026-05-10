@@ -47,10 +47,7 @@ body {
 
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(255, 61, 128, 0.14), transparent 32%),
-    radial-gradient(circle at right center, rgba(110, 193, 255, 0.1), transparent 24%),
-    var(--bg-0);
+  background: var(--bg-0);
   color: var(--text);
 }
 
@@ -89,12 +86,10 @@ select {
   gap: 12px;
 }
 
-.brand-mark {
+.brand-logo {
   width: 38px;
   height: 38px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 35%, var(--accent), transparent 45%), var(--bg-2);
-  border: 1px solid var(--border-strong);
+  flex: 0 0 auto;
 }
 
 .brand-name {
@@ -141,6 +136,8 @@ select {
 
 .sidebar-footer {
   margin-top: auto;
+  display: grid;
+  gap: 14px;
 }
 
 .status-pill,
@@ -236,6 +233,7 @@ h1 em {
   gap: 10px;
   min-width: 148px;
   padding: 8px 10px;
+  width: 100%;
   transition:
     border-color 180ms ease,
     background 180ms ease,
