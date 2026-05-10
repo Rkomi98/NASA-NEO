@@ -26,7 +26,6 @@ import {
   Orbital3DChart,
   SizeDistributionChart,
 } from "./charts";
-import logoUrl from "../assets/logo.svg";
 
 type Section = "dashboard" | "catalog" | "timeline" | "states" | "settings";
 type PageSection = "overview" | "orbits" | "catalog" | "info";
@@ -398,7 +397,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src={logoUrl} alt="Arkemis NEO logo" className="brand-mark" />
+          <div className="brand-mark" />
           <div>
             <div className="brand-name">ARKEMIS</div>
             <div className="brand-sub">NEO Observatory</div>
