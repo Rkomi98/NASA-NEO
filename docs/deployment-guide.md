@@ -41,6 +41,7 @@ Nel progetto, le variabili base gia' previste sono:
 ```env
 NASA_API_KEY=replace-with-your-nasa-api-key
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001
 ```
 
 ## Strategia consigliata
@@ -129,6 +130,7 @@ Compila cosi':
 Aggiungi almeno:
 
 - `NASA_API_KEY` = la tua chiave NASA reale
+- `ALLOWED_ORIGINS` = dominio del frontend Vercel, ad esempio `https://tuo-frontend.vercel.app`
 
 Puoi aggiungere anche variabili opzionali in futuro, ma per partire questa e' quella indispensabile.
 
@@ -244,31 +246,9 @@ Quindi, se pubblichi il frontend su Vercel senza aggiornare questa parte, il bro
 
 Hai due strade.
 
-### Strada A: veloce, ma manuale
+### Strada consigliata
 
-Modifica `allowed_origins` nel file di configurazione e aggiungi il dominio Vercel:
-
-```python
-allowed_origins: List[str] = Field(
-    default_factory=lambda: [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "https://tuo-frontend.vercel.app",
-    ]
-)
-```
-
-Poi:
-
-1. fai commit
-2. pusha su GitHub
-3. lascia che Render ridistribuisca il backend
-
-### Strada B: migliore, per ambienti multipli
-
-Rendi gli origin configurabili via variabile ambiente, per esempio `ALLOWED_ORIGINS`.
+Rendi gli origin configurabili via variabile ambiente, usando `ALLOWED_ORIGINS`.
 
 Esempio di approccio:
 
@@ -282,7 +262,17 @@ Questa opzione e' migliore se vuoi:
 - dominio custom
 - piu' ambienti di test
 
-Se vuoi, posso prepararti anche questa modifica nel codice.
+Esempio:
+
+```env
+ALLOWED_ORIGINS=https://tuo-frontend.vercel.app
+```
+
+Se vuoi supportare anche piu' domini:
+
+```env
+ALLOWED_ORIGINS=https://tuo-frontend.vercel.app,https://tuo-custom-domain.it
+```
 
 ### Nota sulle preview di Vercel
 
