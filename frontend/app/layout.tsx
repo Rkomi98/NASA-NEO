@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-
 export const metadata: Metadata = {
   title: "Arkemis NEO Dashboard",
   description: "NASA NeoWs dashboard powered by FastAPI and Next.js",

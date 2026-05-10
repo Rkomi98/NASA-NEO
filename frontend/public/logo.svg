@@ -1,0 +1,117 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Arkemis NEO Watch icon</title>
+  <desc id="desc">Custom vector icon inspired by aerospace visual language: geometric A, orbital paths and a small asteroid for a Near-Earth Objects monitoring dashboard.</desc>
+
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#123A74" stop-opacity="0.76"/>
+      <stop offset="48%" stop-color="#081D3A" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#020814" stop-opacity="1"/>
+    </radialGradient>
+
+    <linearGradient id="cardEdge" x1="126" y1="82" x2="898" y2="942" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3BD7FF" stop-opacity="0.75"/>
+      <stop offset="0.48" stop-color="#6F55FF" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#FC3D21" stop-opacity="0.45"/>
+    </linearGradient>
+
+    <linearGradient id="aFace" x1="319" y1="282" x2="525" y2="737" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.56" stop-color="#E8EEF8"/>
+      <stop offset="1" stop-color="#9FAEC3"/>
+    </linearGradient>
+
+    <linearGradient id="aShadow" x1="506" y1="420" x2="391" y2="655" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07162E" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#07162E" stop-opacity="0.78"/>
+    </linearGradient>
+
+    <linearGradient id="redOrbit" x1="244" y1="705" x2="779" y2="616" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6A3A" stop-opacity="0"/>
+      <stop offset="0.20" stop-color="#FC3D21"/>
+      <stop offset="0.70" stop-color="#FC3D21"/>
+      <stop offset="1" stop-color="#FF9A76" stop-opacity="0.16"/>
+    </linearGradient>
+
+    <linearGradient id="whiteOrbit" x1="129" y1="517" x2="696" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.17" stop-color="#FFFFFF"/>
+      <stop offset="0.77" stop-color="#EAF2FF"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <linearGradient id="blueOrbit" x1="506" y1="256" x2="773" y2="359" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B3D91" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="#4FA3FF"/>
+      <stop offset="1" stop-color="#79DFFF" stop-opacity="0.18"/>
+    </linearGradient>
+
+    <radialGradient id="asteroidBody" cx="38%" cy="30%" r="72%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="42%" stop-color="#D6DEE9"/>
+      <stop offset="78%" stop-color="#8F9DB0"/>
+      <stop offset="100%" stop-color="#5D697A"/>
+    </radialGradient>
+
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.14 0 0 0 0 0.74 0 0 0 0 1 0 0 0 0.42 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <clipPath id="roundedIcon">
+      <rect x="88" y="88" width="848" height="848" rx="128"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#roundedIcon)">
+    <rect x="88" y="88" width="848" height="848" rx="128" fill="url(#bgGlow)"/>
+
+    <g opacity="0.45">
+      <circle cx="176" cy="226" r="3" fill="#BFEFFF"/>
+      <circle cx="842" cy="234" r="2.5" fill="#FFFFFF"/>
+      <circle cx="762" cy="812" r="2.7" fill="#7DDCFF"/>
+      <circle cx="306" cy="822" r="2" fill="#FFFFFF"/>
+      <circle cx="697" cy="149" r="1.8" fill="#FFFFFF"/>
+      <circle cx="213" cy="676" r="1.6" fill="#7DDCFF"/>
+      <circle cx="878" cy="602" r="1.8" fill="#FFFFFF"/>
+      <circle cx="464" cy="150" r="1.4" fill="#FFFFFF"/>
+      <circle cx="651" cy="705" r="1.4" fill="#FFFFFF"/>
+    </g>
+
+    <g opacity="0.16" stroke="#8CCBFF" stroke-width="1.6">
+      <circle cx="742" cy="306" r="190"/>
+      <circle cx="742" cy="306" r="135"/>
+      <circle cx="742" cy="306" r="82"/>
+    </g>
+
+    <ellipse cx="453" cy="517" rx="372" ry="145" transform="rotate(-19 453 517)" stroke="url(#whiteOrbit)" stroke-width="23" stroke-linecap="round" filter="url(#softGlow)"/>
+    <path d="M263 704C388 752 626 729 785 626" stroke="url(#redOrbit)" stroke-width="45" stroke-linecap="round" filter="url(#softGlow)"/>
+    <path d="M497 279C620 232 755 262 802 351" stroke="url(#blueOrbit)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M536 320C639 357 718 414 767 496" stroke="#B6CCF1" stroke-width="9" stroke-linecap="round" stroke-dasharray="1 34" opacity="0.82"/>
+
+    <g filter="url(#softGlow)">
+      <path d="M289 720L502 266L757 720H619L508 493L396 720H289Z" fill="url(#aFace)"/>
+      <path d="M433 642L513 475L591 642H433Z" fill="#061429"/>
+      <path d="M503 266L757 720H619L509 493L433 642L396 720L503 266Z" fill="url(#aShadow)" opacity="0.22"/>
+      <path d="M508 493L591 642H433L508 493Z" fill="#07162E"/>
+      <path d="M509 493L555 576L470 642H433L509 493Z" fill="#0D2A57" opacity="0.72"/>
+    </g>
+
+    <g transform="translate(594 219) rotate(13)">
+      <path d="M102 10C132 22 153 49 159 82C166 118 146 148 114 163C84 177 46 171 23 147C0 124 -5 85 8 56C22 24 65 -4 102 10Z" fill="url(#asteroidBody)"/>
+      <path d="M38 55C51 42 74 43 80 58C84 68 77 83 61 87C44 91 28 76 38 55Z" fill="#061429" opacity="0.82"/>
+      <path d="M107 45C119 37 137 44 139 58C141 72 125 83 111 78C97 73 94 54 107 45Z" fill="#061429" opacity="0.78"/>
+      <path d="M74 111C87 99 110 105 113 120C116 135 99 147 83 142C67 137 62 123 74 111Z" fill="#061429" opacity="0.72"/>
+      <path d="M25 111C35 104 49 108 53 119C57 131 47 144 34 142C20 139 14 120 25 111Z" fill="#061429" opacity="0.62"/>
+      <path d="M84 14L106 37L94 76L120 105L98 158" stroke="#FFFFFF" stroke-opacity="0.20" stroke-width="5" stroke-linecap="round"/>
+    </g>
+
+    <circle cx="804" cy="353" r="12" fill="#FC3D21" filter="url(#softGlow)"/>
+  </g>
+
+  <rect x="89.5" y="89.5" width="845" height="845" rx="126.5" stroke="url(#cardEdge)" stroke-width="3"/>
+</svg>

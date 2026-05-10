@@ -101,24 +101,18 @@ function getOrbitClassType(item: FeedEvent): string {
 
 function getOrbitPaletteColor(index: number): string {
   const palette = [
-    "#ff5c7a",
-    "#52d6ff",
-    "#ffd166",
-    "#7cffb2",
-    "#b98cff",
-    "#ff9f45",
-    "#67e8f9",
-    "#f472b6",
-    "#a3e635",
-    "#f87171",
-    "#38bdf8",
-    "#facc15",
-    "#c084fc",
-    "#34d399",
-    "#fb7185",
-    "#60a5fa",
-    "#fbbf24",
-    "#2dd4bf",
+    "#4b8df8",
+    "#6d9ef5",
+    "#87aef0",
+    "#6082c4",
+    "#91a4bf",
+    "#aec0d6",
+    "#516b92",
+    "#d6dfeb",
+    "#7292cf",
+    "#5f7aa8",
+    "#90b7ff",
+    "#8097b8",
   ];
   return palette[index % palette.length];
 }
@@ -392,12 +386,30 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
       caption: "massimo stimato NASA",
     },
   ];
+  const heroInsight = useMemo(() => {
+    if (!visibleItems.length) {
+      return null;
+    }
+
+    return visibleItems.reduce((closest, item) => {
+      const currentMissKm = Number(item.close_approach.miss_distance.kilometers);
+      const closestMissKm = Number(closest.close_approach.miss_distance.kilometers);
+
+      if (!Number.isFinite(currentMissKm)) {
+        return closest;
+      }
+      if (!Number.isFinite(closestMissKm)) {
+        return item;
+      }
+      return currentMissKm < closestMissKm ? item : closest;
+    });
+  }, [visibleItems]);
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark" />
+          <img src="/logo.svg" alt="Arkemis logo" className="brand-logo" />
           <div>
             <div className="brand-name">ARKEMIS</div>
             <div className="brand-sub">NEO Observatory</div>
@@ -432,33 +444,77 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
 
       <main className="main-column">
         <header className="topbar">
-          <div>
-            <div className="eyebrow">
-              NeoWs range {range.start} to {range.end}
+          <div className="hero-copy">
+            <div className="hero-meta">
+              <div className="eyebrow">
+                NeoWs range {range.start} to {range.end}
+              </div>
+              <button
+                className="theme-toggle"
+                data-mode={theme}
+                onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+                aria-label={`Attiva modalita' ${theme === "dark" ? "light" : "dark"}`}
+                aria-pressed={theme === "dark"}
+              >
+                <span className="theme-toggle-track" aria-hidden="true">
+                  <span className="theme-toggle-knob" />
+                </span>
+                <span className="theme-toggle-copy">
+                  <span>Tema</span>
+                  <strong>{theme === "dark" ? "Dark" : "Light"}</strong>
+                </span>
+              </button>
             </div>
+            <div className="hero-kicker">Planetary defense dashboard</div>
             <h1>
               Near Earth Objects, <em>resi leggibili</em>.
             </h1>
             <p className="lede">
-              Dashboard full-stack con proxy FastAPI, cache chunked e una UI
-              editoriale ispirata al mock Arkemis.
+              Un layer editoriale sopra NeoWs per capire cosa passa vicino alla Terra,
+              quanto vicino e quali oggetti meritano davvero attenzione.
             </p>
           </div>
-          <button
-            className="theme-toggle"
-            data-mode={theme}
-            onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-            aria-label={`Attiva modalita' ${theme === "dark" ? "light" : "dark"}`}
-            aria-pressed={theme === "dark"}
-          >
-            <span className="theme-toggle-track" aria-hidden="true">
-              <span className="theme-toggle-knob" />
-            </span>
-            <span className="theme-toggle-copy">
-              <span>Dark mode</span>
-              <strong>{theme === "dark" ? "On" : "Off"}</strong>
-            </span>
-          </button>
+          <article className="hero-insight-card">
+            <div className="eyebrow subtle">Insight principale</div>
+            <h2>
+              {heroInsight
+                ? `${heroInsight.name} e' il flyby piu' vicino nel range`
+                : "In attesa del range selezionato"}
+            </h2>
+            <p className="hero-insight-copy">
+              {heroInsight
+                ? `Il close approach piu' ravvicinato cade il ${formatDate(heroInsight.close_approach.close_approach_date)} e concentra subito l'attenzione sul caso limite del periodo osservato.`
+                : "Appena arrivano i dati, qui compare il passaggio piu' rilevante da leggere per primo."}
+            </p>
+            <div className="hero-insight-metrics">
+              <div>
+                <span>Distanza</span>
+                <strong>
+                  {heroInsight
+                    ? `${formatKilometers(Number(heroInsight.close_approach.miss_distance.kilometers))} km`
+                    : "--"}
+                </strong>
+              </div>
+              <div>
+                <span>Velocita'</span>
+                <strong>
+                  {heroInsight
+                    ? `${formatNumber(Number(heroInsight.close_approach.relative_velocity.kilometers_per_second), 1)} km/s`
+                    : "--"}
+                </strong>
+              </div>
+              <div>
+                <span>Rischio</span>
+                <strong className={classNames("hero-metric-state", heroInsight?.is_potentially_hazardous_asteroid && "danger")}>
+                  {heroInsight
+                    ? heroInsight.is_potentially_hazardous_asteroid
+                      ? "Potenziale"
+                      : "Basso"
+                    : "--"}
+                </strong>
+              </div>
+            </div>
+          </article>
         </header>
 
         <section className="filters-bar">

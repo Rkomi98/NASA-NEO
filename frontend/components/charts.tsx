@@ -10,10 +10,10 @@ type ChartOption = import("echarts").EChartsCoreOption;
 type OrbitPoint = [number, number, number];
 
 const PLANETS = [
-  { name: "Mercurio", semiMajorAxis: 0.387, eccentricity: 0.206, color: "#c6b09a", size: 5 },
-  { name: "Venere", semiMajorAxis: 0.723, eccentricity: 0.007, color: "#e7c172", size: 7 },
-  { name: "Terra", semiMajorAxis: 1, eccentricity: 0.017, color: "#5fb5ff", size: 9 },
-  { name: "Marte", semiMajorAxis: 1.524, eccentricity: 0.093, color: "#ff765e", size: 7 },
+  { name: "Mercurio", semiMajorAxis: 0.387, eccentricity: 0.206, color: "#8da0b8", size: 5 },
+  { name: "Venere", semiMajorAxis: 0.723, eccentricity: 0.007, color: "#c7d1df", size: 7 },
+  { name: "Terra", semiMajorAxis: 1, eccentricity: 0.017, color: "#4b8df8", size: 9 },
+  { name: "Marte", semiMajorAxis: 1.524, eccentricity: 0.093, color: "#7286a3", size: 7 },
 ];
 
 function useChart(
@@ -120,24 +120,18 @@ function getOrbitClassType(item: FeedEvent): string {
 
 function getOrbitPaletteColor(index: number): string {
   const palette = [
-    "#ff5c7a",
-    "#52d6ff",
-    "#ffd166",
-    "#7cffb2",
-    "#b98cff",
-    "#ff9f45",
-    "#67e8f9",
-    "#f472b6",
-    "#a3e635",
-    "#f87171",
-    "#38bdf8",
-    "#facc15",
-    "#c084fc",
-    "#34d399",
-    "#fb7185",
-    "#60a5fa",
-    "#fbbf24",
-    "#2dd4bf",
+    "#4b8df8",
+    "#6d9ef5",
+    "#87aef0",
+    "#6082c4",
+    "#91a4bf",
+    "#aec0d6",
+    "#516b92",
+    "#d6dfeb",
+    "#7292cf",
+    "#5f7aa8",
+    "#90b7ff",
+    "#8097b8",
   ];
   return palette[index % palette.length];
 }
@@ -322,7 +316,7 @@ export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
           trigger: "item",
           confine: true,
           backgroundColor: "rgba(255, 255, 255, 0.96)",
-          borderColor: "rgba(255, 87, 96, 0.7)",
+          borderColor: "rgba(75, 141, 248, 0.45)",
           borderWidth: 1,
           textStyle: { color: "#0b1b3c", fontSize: 12 },
           formatter: (params: { data?: unknown[] }) => {
@@ -352,15 +346,15 @@ export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
           nameLocation: "middle",
           nameGap: 34,
           nameTextStyle: {
-            color: "rgba(175, 175, 199, 0.78)",
+            color: "rgba(188, 198, 214, 0.78)",
             fontWeight: 600,
           },
           axisLabel: {
-            color: "rgba(175, 175, 199, 0.86)",
+            color: "rgba(188, 198, 214, 0.86)",
             formatter: (value: number) => formatChartDate(value),
           },
-          axisLine: { lineStyle: { color: "rgba(175, 175, 199, 0.52)" } },
-          axisTick: { lineStyle: { color: "rgba(175, 175, 199, 0.38)" } },
+          axisLine: { lineStyle: { color: "rgba(188, 198, 214, 0.42)" } },
+          axisTick: { lineStyle: { color: "rgba(188, 198, 214, 0.28)" } },
           splitLine: { show: false },
         },
         yAxis: {
@@ -370,16 +364,16 @@ export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
           nameRotate: 90,
           nameGap: 62,
           nameTextStyle: {
-            color: "rgba(175, 175, 199, 0.78)",
+            color: "rgba(188, 198, 214, 0.78)",
             fontWeight: 600,
           },
           axisLabel: {
-            color: "rgba(175, 175, 199, 0.86)",
+            color: "rgba(188, 198, 214, 0.86)",
             formatter: (value: number) => `${value.toFixed(0)}M`,
           },
-          axisLine: { show: true, lineStyle: { color: "rgba(175, 175, 199, 0.52)" } },
-          axisTick: { show: true, lineStyle: { color: "rgba(175, 175, 199, 0.38)" } },
-          splitLine: { lineStyle: { color: "rgba(175, 175, 199, 0.18)" } },
+          axisLine: { show: true, lineStyle: { color: "rgba(188, 198, 214, 0.42)" } },
+          axisTick: { show: true, lineStyle: { color: "rgba(188, 198, 214, 0.28)" } },
+          splitLine: { lineStyle: { color: "rgba(188, 198, 214, 0.14)" } },
         },
         series: [
           {
@@ -397,8 +391,8 @@ export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
             ]),
             itemStyle: {
               color: (params: { dataIndex: number }) =>
-                points[params.dataIndex]?.hazardous ? "#ff5760" : "#6ec1ff",
-              borderColor: "#05060f",
+                points[params.dataIndex]?.hazardous ? "#d84d4d" : "#4b8df8",
+              borderColor: "#09111d",
               borderWidth: 1,
             },
             symbolSize: (value: number[]) =>
@@ -406,8 +400,8 @@ export function DistanceOverTimeChart({ data }: { data: FeedEvent[] }) {
             emphasis: {
               scale: 1.35,
               itemStyle: {
-                shadowBlur: 18,
-                shadowColor: "rgba(255, 255, 255, 0.24)",
+                shadowBlur: 8,
+                shadowColor: "rgba(75, 141, 248, 0.16)",
               },
             },
           },
@@ -455,24 +449,36 @@ export function SizeDistributionChart({ data }: { data: FeedEvent[] }) {
       return {
         backgroundColor: "transparent",
         tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-        legend: { bottom: 0 },
+        legend: {
+          bottom: 0,
+          textStyle: { color: "rgba(188, 198, 214, 0.82)" },
+        },
         grid: { left: 32, right: 8, top: 24, bottom: 44 },
-        xAxis: { type: "category", data: buckets.map((bucket) => bucket.label) },
-        yAxis: { type: "value" },
+        xAxis: {
+          type: "category",
+          data: buckets.map((bucket) => bucket.label),
+          axisLabel: { color: "rgba(188, 198, 214, 0.82)" },
+          axisLine: { lineStyle: { color: "rgba(188, 198, 214, 0.32)" } },
+        },
+        yAxis: {
+          type: "value",
+          axisLabel: { color: "rgba(188, 198, 214, 0.82)" },
+          splitLine: { lineStyle: { color: "rgba(188, 198, 214, 0.14)" } },
+        },
         series: [
           {
             name: "Sicuri",
             type: "bar",
             stack: "items",
             data: safe,
-            itemStyle: { color: "#6ec1ff" },
+            itemStyle: { color: "#4b8df8" },
           },
           {
             name: "Pericolosi",
             type: "bar",
             stack: "items",
             data: hazard,
-            itemStyle: { color: "#ff5760" },
+            itemStyle: { color: "#d84d4d" },
           },
         ],
       };
@@ -518,12 +524,12 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
       }));
 
       return {
-        backgroundColor: "#03050d",
+        backgroundColor: "#09111d",
         tooltip: {
           trigger: "item",
           confine: true,
           backgroundColor: "rgba(255,255,255,0.96)",
-          borderColor: "rgba(110,193,255,0.55)",
+          borderColor: "rgba(75,141,248,0.45)",
           textStyle: { color: "#0b1b3c", fontSize: 12 },
           formatter: (params: { seriesName?: string; data?: { value?: unknown[] } | unknown[] }) => {
             const dataValue = Array.isArray(params.data) ? params.data : params.data?.value;
@@ -547,33 +553,33 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
           name: "X AU",
           min: -4,
           max: 4,
-          axisLine: { lineStyle: { color: "rgba(255,255,255,0.28)" } },
-          axisLabel: { color: "rgba(255,255,255,0.44)" },
-          splitLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
+          axisLine: { lineStyle: { color: "rgba(237,243,251,0.22)" } },
+          axisLabel: { color: "rgba(188,198,214,0.44)" },
+          splitLine: { lineStyle: { color: "rgba(188,198,214,0.07)" } },
         },
         yAxis3D: {
           type: "value",
           name: "Y AU",
           min: -4,
           max: 4,
-          axisLine: { lineStyle: { color: "rgba(255,255,255,0.28)" } },
-          axisLabel: { color: "rgba(255,255,255,0.44)" },
-          splitLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
+          axisLine: { lineStyle: { color: "rgba(237,243,251,0.22)" } },
+          axisLabel: { color: "rgba(188,198,214,0.44)" },
+          splitLine: { lineStyle: { color: "rgba(188,198,214,0.07)" } },
         },
         zAxis3D: {
           type: "value",
           name: "Incl.",
           min: -1.6,
           max: 1.6,
-          axisLine: { lineStyle: { color: "rgba(255,255,255,0.22)" } },
-          axisLabel: { color: "rgba(255,255,255,0.38)" },
-          splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+          axisLine: { lineStyle: { color: "rgba(237,243,251,0.18)" } },
+          axisLabel: { color: "rgba(188,198,214,0.38)" },
+          splitLine: { lineStyle: { color: "rgba(188,198,214,0.05)" } },
         },
         grid3D: {
           boxWidth: 180,
           boxDepth: 180,
           boxHeight: 70,
-          environment: "#03050d",
+          environment: "#09111d",
           axisPointer: { show: false },
           light: {
             main: { intensity: 1.5, shadow: true },
@@ -581,7 +587,7 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
           },
           postEffect: {
             enable: true,
-            bloom: { enable: true, bloomIntensity: 0.24 },
+            bloom: { enable: true, bloomIntensity: 0.08 },
           },
           viewControl: {
             autoRotate: true,
@@ -625,7 +631,7 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
             coordinateSystem: "cartesian3D",
             data: [{ value: [0, 0, 0, "Sole", "Star", "--", "--", "--", "--"] }],
             symbolSize: 18,
-            itemStyle: { color: "#ffd166", opacity: 1 },
+            itemStyle: { color: "#edf3fb", opacity: 1 },
           },
           ...asteroidOrbits.map((orbit) => ({
             name: orbit.name,
@@ -672,7 +678,7 @@ export function Orbital3DChart({ data }: { data: FeedEvent[] }) {
                 textStyle: {
                   color: "#f1eee5",
                   fontSize: 10,
-                  backgroundColor: "rgba(5,6,15,0.72)",
+                  backgroundColor: "rgba(9,17,29,0.78)",
                   borderColor: orbit.color,
                   borderWidth: 1,
                   borderRadius: 4,
