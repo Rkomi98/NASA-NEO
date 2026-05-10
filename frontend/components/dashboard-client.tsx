@@ -26,6 +26,7 @@ import {
   Orbital3DChart,
   SizeDistributionChart,
 } from "./charts";
+import logoUrl from "../assets/logo.svg";
 
 type Section = "dashboard" | "catalog" | "timeline" | "states" | "settings";
 type PageSection = "overview" | "orbits" | "catalog" | "info";
@@ -267,17 +268,54 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
   }, [visibleItems]);
 
   const orbitalStats = useMemo(() => {
-    const withOrbit = visibleItems.filter(
-      (item) => item.orbital_data.semi_major_axis && item.orbital_data.eccentricity,
-    );
-    const withInclination = visibleItems.filter((item) => item.orbital_data.inclination);
-    const withMoid = visibleItems.filter((item) => item.orbital_data.minimum_orbit_intersection);
-    const closeApproachOnly = Math.max(0, visibleItems.length - withOrbit.length);
+    const total = visibleItems.length;
+    const hazardous = visibleItems.filter((item) => item.is_potentially_hazardous_asteroid).length;
+    const closestMissKm = visibleItems.reduce<number | null>((closest, item) => {
+      const missKm = Number(item.close_approach.miss_distance.kilometers);
+      if (!Number.isFinite(missKm)) {
+        return closest;
+      }
+      if (closest == null) {
+        return missKm;
+      }
+      return Math.min(closest, missKm);
+    }, null);
+    const withinNasaThreshold = visibleItems.filter((item) => {
+      const missKm = Number(item.close_approach.miss_distance.kilometers);
+      return Number.isFinite(missKm) && missKm <= 7_500_000;
+    }).length;
+    const fastestKps = visibleItems.reduce<number | null>((fastest, item) => {
+      const velocity = Number(item.close_approach.relative_velocity.kilometers_per_second);
+      if (!Number.isFinite(velocity)) {
+        return fastest;
+      }
+      if (fastest == null) {
+        return velocity;
+      }
+      return Math.max(fastest, velocity);
+    }, null);
+    const hazardousShare = total > 0 ? (hazardous / total) * 100 : null;
     return [
-      { label: "Orbite NASA complete", value: formatNumber(withOrbit.length), caption: "ellissi disegnate solo con a + e" },
-      { label: "Tracce close approach", value: formatNumber(closeApproachOnly), caption: "marker vicino alla Terra del passaggio" },
-      { label: "Inclinazioni reali", value: formatNumber(withInclination.length), caption: "usate solo quando NASA le espone" },
-      { label: "MOID disponibili", value: formatNumber(withMoid.length), caption: "dato orbitale NASA se presente" },
+      {
+        label: "Pericolosi nel range",
+        value: hazardousShare == null ? "--" : `${formatNumber(hazardousShare, 1)}%`,
+        caption: total > 0 ? `${formatNumber(hazardous)} su ${formatNumber(total)} eventi filtrati` : "nessun evento nel range",
+      },
+      {
+        label: "Passaggio piu' vicino",
+        value: closestMissKm == null ? "--" : `${formatKilometers(closestMissKm)} km`,
+        caption: "distanza minima nel range corrente",
+      },
+      {
+        label: "Sotto soglia 7.5M km",
+        value: formatNumber(withinNasaThreshold),
+        caption: "approcci entro la soglia distanza usata da NASA",
+      },
+      {
+        label: "Velocita' massima",
+        value: fastestKps == null ? "--" : `${formatNumber(fastestKps, 1)} km/s`,
+        caption: "picco relativo tra gli oggetti filtrati",
+      },
     ];
   }, [visibleItems]);
 
@@ -360,7 +398,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark" />
+          <img src={logoUrl} alt="Arkemis NEO logo" className="brand-mark" />
           <div>
             <div className="brand-name">ARKEMIS</div>
             <div className="brand-sub">NEO Observatory</div>
