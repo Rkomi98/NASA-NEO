@@ -30,7 +30,6 @@ import {
   SizeDistributionChart,
 } from "./charts";
 
-type Section = "dashboard" | "catalog" | "timeline" | "states" | "settings";
 type PageSection = "overview" | "orbits" | "catalog" | "info";
 
 interface DashboardClientProps {
