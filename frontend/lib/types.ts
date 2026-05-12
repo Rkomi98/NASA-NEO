@@ -13,12 +13,6 @@ export interface ApiErrorShape {
   };
 }
 
-export interface RateLimitState {
-  limit: number | null;
-  remaining: number | null;
-  request_id: string | null;
-}
-
 export interface FeedEvent {
   event_id: string;
   id: string;
@@ -63,7 +57,11 @@ export interface FeedResponse {
     chunk_count: number;
     generated_at: string;
     cache: { hits: number; misses: number };
-    last_upstream_rate_limit: RateLimitState;
+    last_upstream_rate_limit: {
+      limit: number | null;
+      remaining: number | null;
+      request_id: string | null;
+    };
   };
   stats: {
     total: number;
