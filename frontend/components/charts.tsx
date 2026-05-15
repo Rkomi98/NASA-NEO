@@ -84,18 +84,18 @@ export function DistanceOverTimeChart({ data, currentT }: DistanceOverTimeChartP
 
     return {
       backgroundColor: "transparent",
-      grid: { left: 52, right: 12, top: 8, bottom: 30 },
+      grid: { left: 58, right: 18, top: 12, bottom: 36 },
       tooltip: {
         backgroundColor: c.ink,
         borderColor: c.ink,
-        textStyle: { color: c.paper, fontFamily: "JetBrains Mono", fontSize: 11 },
+        textStyle: { color: c.paper, fontFamily: "JetBrains Mono", fontSize: 12 },
         formatter: (p: { value: [number, number, number, string] }) =>
-          `${p.value[3]}<br/>${new Date(p.value[0]).toISOString().slice(0, 10)} · ${p.value[1].toFixed(2)} LD`,
+          `<b style="font-family:serif;font-style:italic;font-size:14px">${p.value[3]}</b><br/>${new Date(p.value[0]).toISOString().slice(0, 10)} · ${p.value[1].toFixed(2)} LD`,
       },
       xAxis: {
         type: "time",
         axisLine: { lineStyle: { color: c.ink3 } },
-        axisLabel: { color: c.ink2, fontSize: 10, fontFamily: "JetBrains Mono" },
+        axisLabel: { color: c.ink2, fontSize: 11, fontFamily: "JetBrains Mono" },
         splitLine: { show: false },
       },
       yAxis: {
@@ -103,7 +103,7 @@ export function DistanceOverTimeChart({ data, currentT }: DistanceOverTimeChartP
         logBase: 10,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: c.ink2, fontSize: 10, fontFamily: "JetBrains Mono", formatter: (v: number) => v + " LD" },
+        axisLabel: { color: c.ink2, fontSize: 11, fontFamily: "JetBrains Mono", formatter: (v: number) => v + " LD" },
         splitLine: { lineStyle: { color: c.rule } },
       },
       series: [
@@ -111,15 +111,16 @@ export function DistanceOverTimeChart({ data, currentT }: DistanceOverTimeChartP
           name: "safe",
           type: "scatter",
           data: safe,
-          symbolSize: (v: number[]) => Math.max(4, Math.min(18, Math.log10(v[2] + 0.01) * 5 + 8)),
-          itemStyle: { color: c.ink2, opacity: 0.7 },
+          // bigger bubbles: min 10px, scales with diameter, max 38px
+          symbolSize: (v: number[]) => Math.max(10, Math.min(38, Math.log10(v[2] + 0.01) * 9 + 16)),
+          itemStyle: { color: c.ink2, opacity: 0.55 },
         },
         {
           name: "haz",
           type: "scatter",
           data: haz,
-          symbolSize: (v: number[]) => Math.max(6, Math.min(22, Math.log10(v[2] + 0.01) * 5 + 10)),
-          itemStyle: { color: c.signal, opacity: 0.95 },
+          symbolSize: (v: number[]) => Math.max(14, Math.min(46, Math.log10(v[2] + 0.01) * 9 + 20)),
+          itemStyle: { color: c.signal, opacity: 0.90 },
         },
         {
           type: "line",
@@ -127,8 +128,8 @@ export function DistanceOverTimeChart({ data, currentT }: DistanceOverTimeChartP
           markLine: {
             symbol: "none",
             silent: true,
-            lineStyle: { color: c.signal, opacity: 0.55, width: 1 },
-            label: { color: c.signal, fontFamily: "JetBrains Mono", fontSize: 9, formatter: "NOW", position: "insideEndTop" },
+            lineStyle: { color: c.signal, opacity: 0.45, width: 1 },
+            label: { color: c.signal, fontFamily: "JetBrains Mono", fontSize: 10, formatter: "NOW", position: "insideEndTop" },
             data: [{ xAxis: currentT }],
           },
         },
@@ -139,7 +140,7 @@ export function DistanceOverTimeChart({ data, currentT }: DistanceOverTimeChartP
             symbol: "none",
             silent: true,
             lineStyle: { color: c.ink3, type: "dashed" },
-            label: { color: c.ink3, fontFamily: "JetBrains Mono", fontSize: 9, formatter: "moon · 1 LD", position: "insideEndTop" },
+            label: { color: c.ink3, fontFamily: "JetBrains Mono", fontSize: 10, formatter: "moon · 1 LD", position: "insideEndTop" },
             data: [{ yAxis: 1 }],
           },
         },
@@ -181,31 +182,54 @@ export function SizeHistogram({ data }: SizeHistogramProps) {
 
     return {
       backgroundColor: "transparent",
-      grid: { left: 24, right: 8, top: 14, bottom: 32 },
+      grid: { left: 32, right: 12, top: 36, bottom: 38 },
       tooltip: {
         trigger: "axis",
-        axisPointer: { type: "shadow" },
+        axisPointer: { type: "shadow", shadowStyle: { color: "rgba(232,232,228,0.04)" } },
         backgroundColor: c.ink,
         borderColor: c.ink,
-        textStyle: { color: c.paper, fontFamily: "JetBrains Mono", fontSize: 11 },
+        textStyle: { color: c.paper, fontFamily: "JetBrains Mono", fontSize: 12 },
+        formatter: (params: Array<{ seriesName: string; value: number; marker: string }>) =>
+          params.map((p) => `${p.marker} ${p.seriesName}: <b>${p.value}</b>`).join("<br/>"),
       },
       xAxis: {
         type: "category",
         data: bins.map((b) => b.label),
         axisLine: { lineStyle: { color: c.ink3 } },
         axisTick: { show: false },
-        axisLabel: { color: c.ink2, fontSize: 10, fontFamily: "JetBrains Mono", interval: 0 },
+        axisLabel: { color: c.ink2, fontSize: 12, fontFamily: "JetBrains Mono", interval: 0 },
       },
       yAxis: {
         type: "value",
+        minInterval: 1,
+        // 20% headroom above tallest bar so it never clips
+        max: (v: { max: number }) => Math.ceil(v.max * 1.22),
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: c.ink2, fontSize: 10, fontFamily: "JetBrains Mono" },
+        axisLabel: { color: c.ink2, fontSize: 11, fontFamily: "JetBrains Mono" },
         splitLine: { lineStyle: { color: c.rule } },
       },
       series: [
-        { name: "safe", type: "bar", stack: "x", data: safe, itemStyle: { color: c.ink2 }, barWidth: "44%" },
-        { name: "haz", type: "bar", stack: "x", data: haz, itemStyle: { color: c.signal }, barWidth: "44%" },
+        {
+          name: "Sicuri",
+          type: "bar",
+          stack: "x",
+          data: safe,
+          // Desaturated warm tone — same ink family, low opacity
+          itemStyle: { color: "rgba(200,198,192,0.28)", borderColor: "rgba(200,198,192,0.45)", borderWidth: 1 },
+          barWidth: "52%",
+          emphasis: { itemStyle: { color: "rgba(200,198,192,0.45)" } },
+        },
+        {
+          name: "Pericolosi",
+          type: "bar",
+          stack: "x",
+          data: haz,
+          // Full signal red — only color that pops
+          itemStyle: { color: c.signal, opacity: 0.88 },
+          barWidth: "52%",
+          emphasis: { itemStyle: { opacity: 1 } },
+        },
       ],
     };
   };

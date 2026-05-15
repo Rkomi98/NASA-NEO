@@ -79,6 +79,15 @@ function getDefaultRange() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Utility: hex color → "r,g,b" string for rgba() usage in canvas
+// ─────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): string {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+}
+
+// ─────────────────────────────────────────────────────────────
 // Live UTC clock
 // ─────────────────────────────────────────────────────────────
 function useUtcClock() {
@@ -162,42 +171,48 @@ function OrbitCanvas({ data, t, activeId, onPick, onHover }: OrbitCanvasProps) {
       return minRpx + ((lv - logMin) / (logMax - logMin)) * (maxRpx - minRpx);
     };
 
-    // Rings
+    // Rings — bolder
     const ringLDs = [1, 5, 20, 60];
-    ctx.lineWidth = 1;
-    ringLDs.forEach((ld) => {
+    ringLDs.forEach((ld, idx) => {
       const r = scaleR(ld);
-      ctx.strokeStyle = rule;
+      ctx.lineWidth = idx === 0 ? 1.5 : 1;
+      ctx.strokeStyle = idx === 0
+        ? `rgba(${ink3.startsWith("#") ? hexToRgb(ink3) : "74,74,72"}, 0.6)`
+        : rule;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = ink3;
-      ctx.font = "9px JetBrains Mono, monospace";
+      ctx.font = "bold 11px JetBrains Mono, monospace";
       ctx.textAlign = "left";
-      ctx.fillText(`${ld} LD`, cx + r + 6, cy - 2);
+      ctx.fillText(`${ld} LD`, cx + r + 7, cy - 3);
     });
 
     // Crosshair
+    ctx.lineWidth = 1;
     ctx.strokeStyle = rule;
-    ctx.setLineDash([2, 6]);
+    ctx.setLineDash([3, 8]);
     ctx.beginPath();
     ctx.moveTo(cx - maxRpx - 10, cy); ctx.lineTo(cx + maxRpx + 10, cy);
     ctx.moveTo(cx, cy - maxRpx - 10); ctx.lineTo(cx, cy + maxRpx + 10);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Earth
+    // Earth — bigger and bolder
     ctx.fillStyle = ink;
     ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
     ctx.fill();
+    ctx.lineWidth = 1.5;
     ctx.strokeStyle = ink;
+    ctx.globalAlpha = 0.35;
     ctx.beginPath();
-    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = ink2;
-    ctx.font = "9px JetBrains Mono, monospace";
-    ctx.fillText("EARTH", cx + 18, cy + 3);
+    ctx.font = "bold 11px JetBrains Mono, monospace";
+    ctx.fillText("EARTH", cx + 22, cy + 4);
 
     const positions: CanvasPosition[] = [];
 
@@ -213,7 +228,7 @@ function OrbitCanvas({ data, t, activeId, onPick, onHover }: OrbitCanvasProps) {
       const r = scaleR(ld);
       const x = cx + Math.cos(angle) * r;
       const y = cy + Math.sin(angle) * r;
-      const size = Math.max(2, Math.min(9, Math.log10(a.estimated_diameter.kilometers.estimated_diameter_max + 0.01) * 2.5 + 4.5));
+      const size = Math.max(4, Math.min(14, Math.log10(a.estimated_diameter.kilometers.estimated_diameter_max + 0.01) * 3.5 + 7));
 
       positions.push({ a, x, y, size, ld });
 
@@ -231,11 +246,12 @@ function OrbitCanvas({ data, t, activeId, onPick, onHover }: OrbitCanvasProps) {
 
       // Halo for hazardous
       if (a.is_potentially_hazardous_asteroid) {
-        const pulseScale = 1 + Math.sin(Date.now() / 380) * 0.15;
+        const pulseScale = 1 + Math.sin(Date.now() / 340) * 0.18;
+        ctx.lineWidth = 1.5;
         ctx.strokeStyle = signal;
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = 0.42;
         ctx.beginPath();
-        ctx.arc(x, y, size * 2.4 * pulseScale, 0, Math.PI * 2);
+        ctx.arc(x, y, size * 2.8 * pulseScale, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
@@ -441,34 +457,70 @@ function Detail({ neo, onClose }: DetailProps) {
             ))}
           </div>
 
-          <div className="section-h">
-            <h3>Avvicinamenti storici</h3>
-            <span className="n">close_approach_data</span>
-          </div>
-          <table className="history">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Distanza</th>
-                <th>Velocità</th>
-                <th>Corpo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {neo.close_approach_data.slice(0, 10).map((h, i) => {
-                const hKm = h.miss_distance ? parseFloat((h.miss_distance as Record<string,string>).kilometers ?? "0") : null;
-                const hVel = h.relative_velocity ? parseFloat((h.relative_velocity as Record<string,string>).kilometers_per_second ?? "0") : null;
-                return (
-                  <tr key={i}>
-                    <td>{h.close_approach_date_full ? fmtDate(h.close_approach_date_full) : h.close_approach_date}</td>
-                    <td>{hKm !== null ? `${fmtKmFull(hKm)} km` : "—"}</td>
-                    <td>{hVel !== null ? `${hVel.toFixed(2)} km/s` : "—"}</td>
-                    <td className="body">{h.orbiting_body}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* Split close_approach_data into future (upcoming) and past (historical) */}
+          {(() => {
+            const now = Date.now();
+            const all = neo.close_approach_data;
+            const future = all.filter((h) => {
+              const d = h.close_approach_date_full ?? h.close_approach_date;
+              return d ? new Date(d).getTime() >= now : false;
+            }).slice(0, 8);
+            const past = all.filter((h) => {
+              const d = h.close_approach_date_full ?? h.close_approach_date;
+              return d ? new Date(d).getTime() < now : true;
+            }).slice(-8).reverse();
+
+            const ApproachTable = ({ rows }: { rows: typeof all }) => (
+              <table className="history">
+                <thead>
+                  <tr><th>Data</th><th>Distanza</th><th>Velocità</th><th>Corpo</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((h, i) => {
+                    const hKm = h.miss_distance ? parseFloat((h.miss_distance as Record<string,string>).kilometers ?? "0") : null;
+                    const hVel = h.relative_velocity ? parseFloat((h.relative_velocity as Record<string,string>).kilometers_per_second ?? "0") : null;
+                    return (
+                      <tr key={i}>
+                        <td>{h.close_approach_date_full ? fmtDate(h.close_approach_date_full) : h.close_approach_date}</td>
+                        <td>{hKm !== null ? `${fmtKmFull(hKm)} km` : "—"}</td>
+                        <td>{hVel !== null ? `${hVel.toFixed(2)} km/s` : "—"}</td>
+                        <td className="body">{h.orbiting_body}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+
+            return (
+              <>
+                {future.length > 0 && (
+                  <>
+                    <div className="section-h">
+                      <h3>Prossimi avvicinamenti</h3>
+                      <span className="n">upcoming · {future.length}</span>
+                    </div>
+                    <ApproachTable rows={future} />
+                  </>
+                )}
+                {past.length > 0 && (
+                  <>
+                    <div className="section-h" style={{ marginTop: future.length > 0 ? 28 : 0 }}>
+                      <h3>Avvicinamenti storici</h3>
+                      <span className="n">close_approach_data · {past.length}</span>
+                    </div>
+                    <ApproachTable rows={past} />
+                  </>
+                )}
+                {future.length === 0 && past.length === 0 && (
+                  <div className="section-h">
+                    <h3>Nessun dato di avvicinamento</h3>
+                    <span className="n">—</span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           <a className="jpl" href={neo.nasa_jpl_url} target="_blank" rel="noreferrer">
             NASA JPL Small-Body DB <span className="arr">↗</span>
@@ -1062,7 +1114,8 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
       {/* Utility bar */}
       <div className="util">
         <div className="brand">
-          <span className="brand-glyph" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Arkemis" className="brand-logo" />
           ARKEMIS · NEO OBSERVATORY
         </div>
         <div />
@@ -1078,10 +1131,12 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
             </button>
           ))}
           <button
-            className="theme-toggle"
+            className={"theme-switch" + (theme === "light" ? " is-light" : "")}
             onClick={() => setTheme((th) => th === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Modalità chiara" : "Modalità scura"}
+            aria-label="Toggle light/dark mode"
           >
-            {theme === "dark" ? "PAPER" : "SPACE"}
+            <span className="ts-thumb" />
           </button>
         </nav>
       </div>
@@ -1107,28 +1162,25 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
       {page === "now" && (
         <>
           <header className="masthead">
-            <div>
+            <div className="masthead-top">
               <div className="meta-l">
                 <span>Range <b>{dateRange.start}</b> → <b>{dateRange.end}</b></span>
                 <span>Sorgente <b>NASA · NeoWs</b></span>
                 {feed?.meta.chunk_count ? <span>Chunks <b>{feed.meta.chunk_count}</b> · {feed.meta.cache.hits} cached</span> : null}
               </div>
-              <h1>
-                Near<span className="ampersand">·</span>Earth<br />
-                <span className="it">Objects</span>
-              </h1>
+              <div className="meta-r">
+                <b>Prossimo avvicinamento</b>
+                {nextApproach ? (
+                  <>
+                    <span className="big">
+                      {fmtDate(nextApproach.close_approach.close_approach_date_full ?? nextApproach.close_approach.close_approach_date)}
+                    </span>
+                    {nextApproach.name} · {parseFloat(nextApproach.close_approach.miss_distance.lunar ?? "0").toFixed(2)} LD
+                  </>
+                ) : "—"}
+              </div>
             </div>
-            <div className="meta-r">
-              <b>Prossimo avvicinamento</b>
-              {nextApproach ? (
-                <>
-                  <span className="big">
-                    {fmtDate(nextApproach.close_approach.close_approach_date_full ?? nextApproach.close_approach.close_approach_date)}
-                  </span>
-                  {nextApproach.name} · {parseFloat(nextApproach.close_approach.miss_distance.lunar ?? "0").toFixed(2)} LD
-                </>
-              ) : "—"}
-            </div>
+            <h1>Near<span className="ampersand">·</span>Earth <span className="it">Objects</span></h1>
           </header>
 
           {/* KPI strip */}
@@ -1207,9 +1259,11 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                       {fmtDate(new Date(t).toISOString())} · {fmtTime(new Date(t).toISOString())}
                     </div>
                     <div className="tr">
-                      ⦿ Pericoloso<br />
-                      ○ Sicuro<br />
-                      Ø = diametro
+                      <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "50%", background: "var(--signal)", verticalAlign: "middle", marginRight: 7 }} />
+                      Pericoloso<br />
+                      <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "50%", background: "var(--ink)", opacity: 0.6, verticalAlign: "middle", marginRight: 7 }} />
+                      Sicuro<br />
+                      <span style={{ opacity: 0.5 }}>Ø&thinsp;=&thinsp;diametro</span>
                     </div>
                     <div className="bl">
                       Anelli &nbsp;1·5·20·60 LD<br />
