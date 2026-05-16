@@ -63,9 +63,9 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   padding: 16px 0;
   font-size: 12.5px;
   letter-spacing: 0.18em;
@@ -80,7 +80,8 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   letter-spacing: 0.20em;
 }
 .util .brand-logo {
-  width: 30px; height: 30px;
+  height: 44px;
+  width: auto;
   border-radius: 6px;
   display: block;
   flex-shrink: 0;
@@ -770,6 +771,8 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   .kpi-strip { grid-template-columns: 1fr 1fr; }
   .kpi { border-bottom: 1px solid var(--rule); }
   .detail-overlay { grid-template-columns: 1fr; }
+
+  .util .brand-logo { height: 52px; }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

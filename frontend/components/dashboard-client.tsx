@@ -1114,13 +1114,10 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     <div className="page">
       {/* Utility bar */}
       <div className="util">
-        <div className="brand">
+        <div className="brand" onClick={() => setPage("now")} style={{ cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.svg" alt="Arkemis" className="brand-logo" />
-          ARKEMIS · NEO OBSERVATORY
         </div>
-        <div />
-        <div className="clock" suppressHydrationWarning>{clock ? utcString(clock) : ""}</div>
         <nav>
           {(["now","catalog","states","settings"] as Page[]).map((p) => (
             <button
