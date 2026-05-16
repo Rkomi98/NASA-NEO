@@ -980,6 +980,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
   const [t, setT] = useState(rangeStart);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
+  const [rosterExpanded, setRosterExpanded] = useState(false);
   useEffect(() => { setT(rangeStart); }, [rangeStart]);
 
   useEffect(() => {
@@ -1041,7 +1042,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     getNeo(pickedId, ac.signal)
       .then((data) => { setDetail(data); setDetailLoading(false); })
       .catch((err: Error) => {
-        if (err.name !== "AbortError") setDetailLoading(false);
+        if (err.name !== "AbortError") { setDetail(null); setDetailLoading(false); }
       });
     return () => ac.abort();
   }, [pickedId]);
@@ -1257,7 +1258,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <div className="orbit-overlay">
                     <div className="tl">
                       <b>Now</b><br />
-                      {fmtDate(new Date(t).toISOString())} · {fmtTime(new Date(t).toISOString())}
+                      {Number.isFinite(t) ? `${fmtDate(new Date(t).toISOString())} · ${fmtTime(new Date(t).toISOString())}` : "—"}
                     </div>
                     <div className="tr">
                       <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "50%", background: "var(--signal)", verticalAlign: "middle", marginRight: 7 }} />
@@ -1280,8 +1281,15 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   <div className="head">
                     <span>Roster</span>
                     <b>{filtered.length}</b>
+                    <span
+                      onClick={() => setRosterExpanded(!rosterExpanded)}
+                      style={{ marginLeft: 12, cursor: 'pointer', opacity: 0.6, fontSize: 10 }}
+                      title={rosterExpanded ? 'Comprimi roster' : 'Espandi roster'}
+                    >
+                      {rosterExpanded ? '−' : '+'}
+                    </span>
                   </div>
-                  <div className="roster">
+                  <div className="roster" style={{ maxHeight: rosterExpanded ? 'calc(22 * 44px)' : 'calc(15 * 44px)' }}>
                     {filtered
                       .slice()
                       .sort((a, b) =>
@@ -1342,7 +1350,7 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
                   </div>
                   <div className="handle" style={{ left: `${((t - rangeStart) / (rangeEnd - rangeStart)) * 100}%` }} />
                 </div>
-                <div className="date">{fmtDate(new Date(t).toISOString())}</div>
+                <div className="date">{Number.isFinite(t) ? fmtDate(new Date(t).toISOString()) : "—"}</div>
                 <div className="speed">
                   {[0.5, 1, 3, 10].map((s) => (
                     <button

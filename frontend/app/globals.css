@@ -43,8 +43,6 @@ body {
   transition: background-color 0.4s ease, color 0.4s ease;
   -webkit-font-smoothing: antialiased;
 }
-.serif { font-family: "Source Serif 4", "EB Garamond", Georgia, serif; }
-
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 input { font: inherit; color: inherit; background: transparent; border: none; outline: none; }
@@ -85,13 +83,6 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   width: 30px; height: 30px;
   border-radius: 6px;
   display: block;
-  flex-shrink: 0;
-}
-.util .brand-glyph {
-  width: 10px; height: 10px;
-  background: var(--signal);
-  border-radius: 50%;
-  animation: heart 1.4s ease-in-out infinite;
   flex-shrink: 0;
 }
 @keyframes heart { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.78); } }
@@ -314,8 +305,7 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
 .orbit-side .head b { color: var(--ink); font-size: 13px; }
 .orbit-side .roster {
   overflow-y: auto;
-  /* max 22 rows visible; each row ≈ 44px */
-  max-height: calc(22 * 44px);
+  /* default ~15 rows visible; expanded ~22 rows; each row ≈ 44px */
 }
 .roster-row {
   display: grid;
@@ -493,8 +483,6 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   white-space: nowrap;
 }
 .tbl thead th:first-child { padding-left: 0; }
-/* Sort arrow uses signal only for sort column */
-.tbl thead th .arr { color: var(--signal); margin-left: 5px; }
 .tbl tbody td {
   padding: 16px 16px 16px 0;
   border-bottom: 1px solid var(--rule);
@@ -513,7 +501,6 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   letter-spacing: -0.01em;
   line-height: 1.15;
 }
-.tbl .name .it { font-style: italic; color: var(--ink-2); }
 .tbl .id { font-size: 11px; color: var(--ink-3); letter-spacing: 0.12em; margin-top: 2px; }
 .tbl .haz-cell {
   display: flex; align-items: center; gap: 10px;
