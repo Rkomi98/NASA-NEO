@@ -506,7 +506,7 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
 .tbl tbody tr:hover { background: var(--highlight); }
 .tbl tbody tr.active { background: var(--ink); color: var(--paper); }
 .tbl tbody tr.active td { border-color: var(--ink); }
-.tbl tbody tr.active .ink-2 { color: rgba(232,232,228,0.5); }
+.tbl tbody tr.active .ink-2 { color: var(--paper); opacity: 0.6; }
 .tbl .name {
   font-family: "Source Serif 4", Georgia, serif;
   font-size: 21px;
@@ -539,7 +539,7 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
 .bar-cell .bar > span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-2); }
 /* Hazardous distance/size bars use signal red */
 .bar-cell.danger .bar > span { background: var(--signal); }
-.tbl tr.active .bar-cell .bar { background: rgba(232,232,228,0.2); }
+.tbl tr.active .bar-cell .bar { background: var(--rule-strong); }
 .tbl tr.active .bar-cell .bar > span { background: var(--paper); }
 .tbl tr.active .bar-cell.danger .bar > span { background: var(--paper); }
 

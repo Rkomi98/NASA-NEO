@@ -68,6 +68,30 @@ function utcString(d: Date) {
   return `${d.getUTCFullYear()}.${String(d.getUTCMonth()+1).padStart(2,"0")}.${String(d.getUTCDate()).padStart(2,"0")} · ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}:${String(d.getUTCSeconds()).padStart(2,"0")} UTC`;
 }
 
+function ApproachTable({ rows }: { rows: NeoDetailResponse["close_approach_data"] }) {
+  return (
+    <table className="history">
+      <thead>
+        <tr><th>Data</th><th>Distanza</th><th>Velocità</th><th>Corpo</th></tr>
+      </thead>
+      <tbody>
+        {rows.map((h, i) => {
+          const hKm = h.miss_distance ? parseFloat((h.miss_distance as Record<string, string>).kilometers ?? "0") : null;
+          const hVel = h.relative_velocity ? parseFloat((h.relative_velocity as Record<string, string>).kilometers_per_second ?? "0") : null;
+          return (
+            <tr key={i}>
+              <td>{h.close_approach_date_full ? fmtDate(h.close_approach_date_full) : h.close_approach_date}</td>
+              <td>{hKm !== null ? `${fmtKmFull(hKm)} km` : "—"}</td>
+              <td>{hVel !== null ? `${hVel.toFixed(2)} km/s` : "—"}</td>
+              <td className="body">{h.orbiting_body}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 function getDefaultRange() {
   const end = new Date();
   const start = new Date(end);
@@ -218,7 +242,6 @@ function OrbitCanvas({ data, t, activeId, onPick, onHover }: OrbitCanvasProps) {
 
     data.forEach((a) => {
       const ca = a.close_approach;
-      const v = parseFloat(ca.relative_velocity.kilometers_per_second);
       const approachT = ca.epoch_date_close_approach;
       const baseLD = parseFloat(ca.miss_distance.lunar ?? "0");
       const offsetDays = Math.abs(t - approachT) / 86400000;
@@ -469,28 +492,6 @@ function Detail({ neo, onClose }: DetailProps) {
               const d = h.close_approach_date_full ?? h.close_approach_date;
               return d ? new Date(d).getTime() < now : true;
             }).slice(-8).reverse();
-
-            const ApproachTable = ({ rows }: { rows: typeof all }) => (
-              <table className="history">
-                <thead>
-                  <tr><th>Data</th><th>Distanza</th><th>Velocità</th><th>Corpo</th></tr>
-                </thead>
-                <tbody>
-                  {rows.map((h, i) => {
-                    const hKm = h.miss_distance ? parseFloat((h.miss_distance as Record<string,string>).kilometers ?? "0") : null;
-                    const hVel = h.relative_velocity ? parseFloat((h.relative_velocity as Record<string,string>).kilometers_per_second ?? "0") : null;
-                    return (
-                      <tr key={i}>
-                        <td>{h.close_approach_date_full ? fmtDate(h.close_approach_date_full) : h.close_approach_date}</td>
-                        <td>{hKm !== null ? `${fmtKmFull(hKm)} km` : "—"}</td>
-                        <td>{hVel !== null ? `${hVel.toFixed(2)} km/s` : "—"}</td>
-                        <td className="body">{h.orbiting_body}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            );
 
             return (
               <>

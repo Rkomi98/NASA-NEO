@@ -23,6 +23,8 @@ function cssColors() {
 function useEChart(buildOption: () => object, deps: unknown[]) {
   const ref = useRef<HTMLDivElement>(null);
   const inst = useRef<ECharts | null>(null);
+  const buildOptionRef = useRef(buildOption);
+  buildOptionRef.current = buildOption;
 
   useEffect(() => {
     const el = ref.current;
@@ -30,7 +32,7 @@ function useEChart(buildOption: () => object, deps: unknown[]) {
     inst.current = echarts.init(el);
 
     const onResize = () => inst.current?.resize();
-    const onTheme = () => inst.current?.setOption(buildOption() as EChartsOption, true);
+    const onTheme = () => inst.current?.setOption(buildOptionRef.current() as EChartsOption, true);
 
     window.addEventListener("resize", onResize);
     window.addEventListener("arkemis-theme", onTheme);
@@ -41,11 +43,10 @@ function useEChart(buildOption: () => object, deps: unknown[]) {
       inst.current?.dispose();
       inst.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    inst.current?.setOption(buildOption() as EChartsOption, true);
+    inst.current?.setOption(buildOptionRef.current() as EChartsOption, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
@@ -168,7 +169,7 @@ export function SizeHistogram({ data }: SizeHistogramProps) {
       { min: 0.05, max: 0.14, label: "50–140" },
       { min: 0.14, max: 0.5, label: "140–500" },
       { min: 0.5, max: 1, label: "500m–1k" },
-      { min: 1, max: 100, label: ">1 km" },
+      { min: 1, max: Infinity, label: ">1 km" },
     ];
     const safe = bins.map(() => 0);
     const haz = bins.map(() => 0);
