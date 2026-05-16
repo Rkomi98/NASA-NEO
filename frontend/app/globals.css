@@ -168,7 +168,7 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
 
 /* ---- Masthead ---- */
 .masthead {
-  padding: 64px 0 40px;
+  padding: 30px 0 40px;
   border-bottom: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
