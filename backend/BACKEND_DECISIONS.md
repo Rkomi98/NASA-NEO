@@ -240,7 +240,7 @@ Stack: FastAPI 0.115, Pydantic **1.10** (BaseSettings nativo), httpx 0.28, Prome
 **Più probabile**: la **(3)**. Una volta usata env per il secret, conviene uniformare tutto il resto.
 
 **Stato post-review**:
-- Rimosso `Settings.Config.parse_env_var`: era ridondante perché `@validator("allowed_origins", pre=True)` copre già tutti i casi (str CSV, JSON list, lista, vuoto). La logica JSON è ora consolidata nel validator.
+- `Settings.Config.parse_env_var` è mantenuto solo per `allowed_origins`: con Pydantic 1.x serve a evitare il parse JSON anticipato di `BaseSettings` sulle env var complesse, così il validator può gestire correttamente CSV, JSON list, lista e stringa singola.
 - Aggiunti bound Pydantic su tutti i numerici: `feed_ttl_seconds`, `neo_ttl_seconds`, `max_days`, `upstream_timeout_seconds`, `upstream_concurrency` hanno `gt=0` / `ge=1`. Configurazioni patologiche (`UPSTREAM_CONCURRENCY=0` deadlocka, `UPSTREAM_TIMEOUT_SECONDS=-1` rompe httpx) vengono rifiutate a startup. `chunk_days` è hard-bounded a `le=7` (limite NASA).
 - `max_days` resta libero (di default 365): per restringere il perimetro a 30 giorni basta `MAX_DAYS=30` come env var, senza toccare il codice.
 

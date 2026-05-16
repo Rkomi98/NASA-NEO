@@ -40,6 +40,12 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = False
 
+        @classmethod
+        def parse_env_var(cls, field_name: str, raw_val: str) -> object:
+            if field_name == "allowed_origins":
+                return raw_val
+            return cls.json_loads(raw_val)
+
     @validator("allowed_origins", pre=True)
     def parse_allowed_origins(cls, value: object) -> List[str]:
         if value is None or value == "":
