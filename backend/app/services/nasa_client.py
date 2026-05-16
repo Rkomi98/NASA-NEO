@@ -1,10 +1,16 @@
 import asyncio
+import random
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import httpx
 
 from app.core.errors import UpstreamAPIError
+
+
+RETRY_AFTER_CAP_SECONDS = 5.0
+BACKOFF_BASE_SECONDS = 0.4
+MAX_ATTEMPTS = 3
 
 
 class NasaNeoClient:
@@ -33,32 +39,36 @@ class NasaNeoClient:
     def upstream_state(self) -> Dict[str, Any]:
         return dict(self._upstream_state)
 
-    async def fetch_feed(self, *, start_date: str, end_date: str) -> Dict[str, Any]:
+    async def fetch_feed(
+        self, *, start_date: str, end_date: str
+    ) -> "tuple[Dict[str, Any], Dict[str, Any]]":
         return await self._request(
             "/feed",
             params={"start_date": start_date, "end_date": end_date, "api_key": self.api_key},
         )
 
-    async def fetch_neo(self, neo_id: str) -> Dict[str, Any]:
+    async def fetch_neo(self, neo_id: str) -> "tuple[Dict[str, Any], Dict[str, Any]]":
         return await self._request(f"/neo/{neo_id}", params={"api_key": self.api_key})
 
-    async def _request(self, path: str, *, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _request(
+        self, path: str, *, params: Dict[str, Any]
+    ) -> "tuple[Dict[str, Any], Dict[str, Any]]":
         if self._client is None:
             raise RuntimeError("NASA client not started")
 
-        attempts = 2
-        for attempt in range(attempts):
+        for attempt in range(MAX_ATTEMPTS):
+            is_last = attempt == MAX_ATTEMPTS - 1
             try:
                 response = await self._client.get(f"{self.base_url}{path}", params=params)
-                self._capture_headers(response)
+                snapshot = self._capture_headers(response)
             except httpx.TimeoutException as exc:
-                if attempt == attempts - 1:
+                if is_last:
                     raise UpstreamAPIError(
                         status_code=503,
                         code="upstream_timeout",
                         message="La NASA API ha impiegato troppo tempo a rispondere.",
                     ) from exc
-                await asyncio.sleep(0.4)
+                await asyncio.sleep(_backoff_delay(attempt))
                 continue
             except httpx.HTTPError as exc:
                 raise UpstreamAPIError(
@@ -75,6 +85,14 @@ class NasaNeoClient:
                 )
 
             if response.status_code == 429:
+                retry_after = _parse_retry_after(response.headers.get("retry-after"))
+                if (
+                    not is_last
+                    and retry_after is not None
+                    and retry_after <= RETRY_AFTER_CAP_SECONDS
+                ):
+                    await asyncio.sleep(retry_after)
+                    continue
                 raise UpstreamAPIError(
                     status_code=429,
                     code="rate_limited",
@@ -82,17 +100,18 @@ class NasaNeoClient:
                     details={
                         "rate_limit_limit": self._upstream_state["last_rate_limit_limit"],
                         "rate_limit_remaining": self._upstream_state["last_rate_limit_remaining"],
+                        "retry_after_seconds": retry_after,
                     },
                 )
 
             if 500 <= response.status_code <= 599:
-                if attempt == attempts - 1:
+                if is_last:
                     raise UpstreamAPIError(
                         status_code=503,
                         code="upstream_error",
                         message="La NASA API e' temporaneamente indisponibile.",
                     )
-                await asyncio.sleep(0.4)
+                await asyncio.sleep(_backoff_delay(attempt))
                 continue
 
             if response.status_code >= 400:
@@ -104,7 +123,7 @@ class NasaNeoClient:
                 )
 
             try:
-                return response.json()
+                return response.json(), snapshot
             except ValueError as exc:
                 raise UpstreamAPIError(
                     status_code=502,
@@ -118,14 +137,16 @@ class NasaNeoClient:
             message="La NASA API e' temporaneamente indisponibile.",
         )
 
-    def _capture_headers(self, response: httpx.Response) -> None:
-        self._upstream_state = {
+    def _capture_headers(self, response: httpx.Response) -> Dict[str, Any]:
+        snapshot: Dict[str, Any] = {
             "last_status": response.status_code,
             "last_rate_limit_limit": _to_int(response.headers.get("x-ratelimit-limit")),
             "last_rate_limit_remaining": _to_int(response.headers.get("x-ratelimit-remaining")),
             "last_request_at": datetime.now(timezone.utc).isoformat(),
             "request_id": response.headers.get("x-api-umbrella-request-id"),
         }
+        self._upstream_state = snapshot
+        return dict(snapshot)
 
 
 def _to_int(value: Optional[str]) -> Optional[int]:
@@ -135,3 +156,19 @@ def _to_int(value: Optional[str]) -> Optional[int]:
         return int(value)
     except ValueError:
         return None
+
+
+def _backoff_delay(attempt: int) -> float:
+    return BACKOFF_BASE_SECONDS * (2 ** attempt) + random.uniform(0, BACKOFF_BASE_SECONDS)
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        parsed = float(value)
+    except ValueError:
+        return None
+    if parsed < 0:
+        return None
+    return parsed

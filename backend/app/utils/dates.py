@@ -49,5 +49,8 @@ def chunk_date_range(start: date, end: date, chunk_days: int) -> List[Tuple[date
 
 
 def date_in_range(value: str, start: date, end: date) -> bool:
-    parsed = parse_iso_date(value)
+    try:
+        parsed = parse_iso_date(value)
+    except APIError:
+        return False
     return start <= parsed <= end
