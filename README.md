@@ -15,6 +15,8 @@
   <img alt="Cache" src="https://img.shields.io/badge/Cache-File--based-5B6470?style=flat-square">
 </p>
 
+> Questa è la vecchia versione
+
 <p align="center">
   <a href="#-quick-start">Quick Start</a> ·
   <a href="#-progetto-in-30-secondi">Panoramica</a> ·
