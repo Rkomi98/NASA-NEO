@@ -26,31 +26,19 @@ class Settings(BaseSettings):
         r"^https?://(localhost|127\.0\.0\.1):[0-9]+$",
         env="ALLOWED_ORIGIN_REGEX",
     )
-    feed_ttl_seconds: int = 60 * 60 * 12
-    neo_ttl_seconds: int = 60 * 60 * 72
-    max_days: int = 365
-    chunk_days: int = 7
-    upstream_timeout_seconds: float = 20.0
-    upstream_concurrency: int = 2
+    feed_ttl_seconds: int = Field(60 * 60 * 12, gt=0)
+    neo_ttl_seconds: int = Field(60 * 60 * 72, gt=0)
+    max_days: int = Field(365, gt=0)
+    chunk_days: int = Field(7, ge=1, le=7)
+    upstream_timeout_seconds: float = Field(20.0, gt=0)
+    upstream_concurrency: int = Field(2, ge=1)
+    enable_admin_endpoints: bool = Field(False, env="ENABLE_ADMIN_ENDPOINTS")
     cache_dir: Path = Path(__file__).resolve().parents[2] / "cache"
 
     class Config:
         env_file = Path(__file__).resolve().parents[3] / ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-
-        @classmethod
-        def parse_env_var(cls, field_name: str, raw_val: str):
-            if field_name == "allowed_origins":
-                value = raw_val.strip()
-                if not value:
-                    return DEFAULT_ALLOWED_ORIGINS.copy()
-                if value.startswith("["):
-                    import json
-
-                    return json.loads(value)
-                return [item.strip() for item in value.split(",") if item.strip()]
-            return super().parse_env_var(field_name, raw_val)
 
     @validator("allowed_origins", pre=True)
     def parse_allowed_origins(cls, value: object) -> List[str]:
@@ -59,7 +47,15 @@ class Settings(BaseSettings):
         if isinstance(value, list):
             return [str(item).strip() for item in value if str(item).strip()]
         if isinstance(value, str):
-            return [item.strip() for item in value.split(",") if item.strip()]
+            stripped = value.strip()
+            if stripped.startswith("["):
+                import json
+
+                parsed = json.loads(stripped)
+                if not isinstance(parsed, list):
+                    raise ValueError("ALLOWED_ORIGINS JSON must be a list")
+                return [str(item).strip() for item in parsed if str(item).strip()]
+            return [item.strip() for item in stripped.split(",") if item.strip()]
         raise ValueError("ALLOWED_ORIGINS must be a comma-separated string or list")
 
 

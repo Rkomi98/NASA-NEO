@@ -1,6 +1,10 @@
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, root_validator
+
+
+ISO_DATE_REGEX = r"^\d{4}-\d{2}-\d{2}$"
+NEO_ID_REGEX = r"^[0-9]+$"
 
 
 class RateLimitState(BaseModel):
@@ -85,9 +89,18 @@ class HealthResponse(BaseModel):
 
 class CacheInvalidateRequest(BaseModel):
     scope: Literal["all", "feed", "neo"]
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    neo_id: Optional[str] = None
+    start_date: Optional[str] = Field(None, regex=ISO_DATE_REGEX)
+    end_date: Optional[str] = Field(None, regex=ISO_DATE_REGEX)
+    neo_id: Optional[str] = Field(None, regex=NEO_ID_REGEX)
+
+    @root_validator
+    def validate_scope_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        scope = values.get("scope")
+        if scope == "feed" and not (values.get("start_date") and values.get("end_date")):
+            raise ValueError("scope='feed' richiede start_date e end_date")
+        if scope == "neo" and not values.get("neo_id"):
+            raise ValueError("scope='neo' richiede neo_id")
+        return values
 
 
 class CacheInvalidateResponse(BaseModel):

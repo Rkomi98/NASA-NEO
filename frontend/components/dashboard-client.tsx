@@ -913,8 +913,7 @@ function ColophonView() {
     <footer className="colophon">
       <div>
         <h4>Arkemis NEO Observatory</h4>
-        Editorial dashboard per esplorare i Near-Earth Objects della NASA.<br />
-        Volume 003 · Issue 21 · 2025
+        Editorial dashboard per esplorare i Near-Earth Objects della NASA. · 16 - 05 - 2026
       </div>
       <div>
         <h4>Sorgenti</h4>

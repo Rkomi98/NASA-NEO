@@ -80,5 +80,6 @@ async def root_head() -> Response:
 app.include_router(feed_router)
 app.include_router(neo_router)
 app.include_router(health_router)
-app.include_router(cache_router)
+if settings.enable_admin_endpoints:
+    app.include_router(cache_router)
 app.include_router(metrics_router)
