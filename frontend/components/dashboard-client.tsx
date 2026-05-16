@@ -1114,9 +1114,33 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
     <div className="page">
       {/* Utility bar */}
       <div className="util">
-        <div className="brand" onClick={() => setPage("now")} style={{ cursor: "pointer" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Arkemis" className="brand-logo" />
+        <div className="brand" onClick={() => setPage("now")} style={{ cursor: "pointer" }} aria-label="NEO Observatory">
+          <span className="brand-logo-set" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/neo_logo_extended_dark_crop.png"
+              alt=""
+              className="brand-logo brand-logo-desktop brand-logo-dark"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/neo_logo_extended_light_crop.png"
+              alt=""
+              className="brand-logo brand-logo-desktop brand-logo-light"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/neo_logo_mobile_dark_crop.png"
+              alt=""
+              className="brand-logo brand-logo-mobile brand-logo-dark"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/neo_logo_mobile_light_crop.png"
+              alt=""
+              className="brand-logo brand-logo-mobile brand-logo-light"
+            />
+          </span>
         </div>
         <nav>
           {(["now","catalog","states","settings"] as Page[]).map((p) => (
@@ -1128,15 +1152,15 @@ export function DashboardClient({ standaloneNeoId }: DashboardClientProps) {
               {p === "now" ? "Now" : p === "catalog" ? "Catalogo" : p === "states" ? "Stati" : "API"}
             </button>
           ))}
-          <button
-            className={"theme-switch" + (theme === "light" ? " is-light" : "")}
-            onClick={() => setTheme((th) => th === "dark" ? "light" : "dark")}
-            title={theme === "dark" ? "Modalità chiara" : "Modalità scura"}
-            aria-label="Toggle light/dark mode"
-          >
-            <span className="ts-thumb" />
-          </button>
         </nav>
+        <button
+          className={"theme-switch" + (theme === "light" ? " is-light" : "")}
+          onClick={() => setTheme((th) => th === "dark" ? "light" : "dark")}
+          title={theme === "dark" ? "Modalità chiara" : "Modalità scura"}
+          aria-label="Toggle light/dark mode"
+        >
+          <span className="ts-thumb" />
+        </button>
       </div>
 
       {/* Marquee */}

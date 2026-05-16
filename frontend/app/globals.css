@@ -57,16 +57,18 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
 
 /* ---- Top utility bar (STICKY) ---- */
 .util {
+  --tab-size: 52px;
+  --util-pad-y: 12px;
   position: sticky;
   top: 0;
   z-index: 40;
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 16px 0;
+  gap: clamp(24px, 3vw, 56px);
+  padding: var(--util-pad-y) 0;
   font-size: 12.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -79,25 +81,44 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   font-weight: 600;
   letter-spacing: 0.20em;
 }
+.util .brand-logo-set {
+  display: inline-flex;
+  align-items: center;
+}
 .util .brand-logo {
-  height: 44px;
+  height: var(--tab-size);
   width: auto;
-  border-radius: 6px;
+  max-width: min(36vw, 360px);
+  object-fit: contain;
   display: block;
   flex-shrink: 0;
 }
+[data-theme="dark"] .util .brand-logo-light,
+[data-theme="light"] .util .brand-logo-dark,
+.util .brand-logo-mobile {
+  display: none;
+}
 @keyframes heart { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.78); } }
 
-.util nav { display: flex; align-items: center; gap: 22px; justify-self: end; }
+.util nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 2.1vw, 42px);
+  justify-self: center;
+  flex-wrap: wrap;
+}
 .util nav button {
   color: var(--ink-2);
   letter-spacing: 0.16em;
   font-size: 12.5px;
-  padding: 5px 0;
+  min-height: var(--tab-size);
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
 }
 .util nav button.active { color: var(--ink); position: relative; }
 .util nav button.active::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -17px;
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--util-pad-y) - 1px);
   height: 2px; background: var(--signal);
 }
 .util .clock { font-variant-numeric: tabular-nums; font-size: 12px; }
@@ -771,8 +792,63 @@ input { font: inherit; color: inherit; background: transparent; border: none; ou
   .kpi-strip { grid-template-columns: 1fr 1fr; }
   .kpi { border-bottom: 1px solid var(--rule); }
   .detail-overlay { grid-template-columns: 1fr; }
+  .util {
+    --tab-size: 46px;
+    --util-pad-y: 8px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 16px;
+  }
+  .util nav {
+    justify-self: center;
+    gap: clamp(12px, 2vw, 24px);
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  .util nav button {
+    min-height: var(--tab-size);
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+  }
 
-  .util .brand-logo { height: 52px; }
+  .util .brand-logo-desktop { display: none; }
+  [data-theme="dark"] .util .brand-logo-mobile.brand-logo-dark,
+  [data-theme="light"] .util .brand-logo-mobile.brand-logo-light {
+    display: block;
+  }
+  .util .brand-logo-mobile {
+    height: var(--tab-size);
+    width: var(--tab-size);
+    max-width: var(--tab-size);
+    object-fit: contain;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 0 16px;
+  }
+  .util {
+    --tab-size: 42px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .util nav {
+    justify-self: stretch;
+    justify-content: center;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .util nav::-webkit-scrollbar { display: none; }
+  .util nav button {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .theme-switch {
+    justify-self: end;
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
