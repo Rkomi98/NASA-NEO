@@ -1,10 +1,4 @@
 # Arkemis NEO Dashboard
-
-<p align="center">
-  <strong>Una dashboard full-stack per leggere, filtrare e raccontare i Near Earth Objects della NASA</strong><br/>
-  con <code>Next.js</code>, <code>FastAPI</code>, <code>ECharts</code> e un proxy che protegge la chiave NASA.
-</p>
-
 <p align="center">
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=nextdotjs&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Proxy-009688?style=flat-square&logo=fastapi&logoColor=white">
@@ -14,10 +8,11 @@
   <img alt="NASA NeoWs" src="https://img.shields.io/badge/NASA-NeoWs-0B3D91?style=flat-square&logo=nasa&logoColor=white">
   <img alt="Cache" src="https://img.shields.io/badge/Cache-File--based-5B6470?style=flat-square">
 </p>
+Una dashboard full-stack per leggere e filtrare i Near Earth Objects della NASA con <code>Next.js</code>, <code>FastAPI</code>, <code>ECharts</code> e un proxy che protegge la chiave NASA.
 
 <p align="center">
-  <a href="#il-progetto">Il progetto</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#il-progetto">Il progetto</a> ·
   <a href="#api-implementate">API</a> ·
   <a href="#scelte-tecniche">Scelte tecniche</a> ·
   <a href="#deploy">Deploy</a>
