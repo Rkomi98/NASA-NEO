@@ -16,31 +16,27 @@ Una dashboard full-stack per leggere e filtrare i Near Earth Objects della NASA 
 
 | Sezione | Cosa trovi |
 |---|---|
-| [Il progetto](#il-progetto) | A cosa serve, perché esiste, da dove nasce |
+| [Il progetto](#il-progetto) | A cosa serve e da dove nasce |
 | [Screenshots](#screenshots) | Due viste dell'app dal vivo |
-| [Struttura](#struttura) | Layout del monorepo, cosa vive dove |
-| [Cosa fa](#cosa-fa) | Cosa offre il backend e cosa offre la UI |
+| [Struttura](#struttura) | Com'è impostata la repo |
+| [Cosa fa](#cosa-fa) | Cosa offre il backend e cosa fa la UI |
 | [Quick Start](#quick-start) | Prerequisiti, env, avvio backend e frontend |
-| [API implementate](#api-implementate) | Tutti gli endpoint reali con note |
-| [Scelte tecniche](#scelte-tecniche) | Le decisioni chiave, in sintesi |
+| [API implementate](#api-implementate) | Tutti gli endpoint con note |
+| [Scelte tecniche](#scelte-tecniche) | Le decisioni che ho preso (in breve) |
 | [Verifica](#verifica) | Test backend, type-check e build frontend, smoke test |
 | [Deploy](#deploy) | Configurazione consigliata, nota su GitHub Pages |
 | [Documentazione estesa](#documentazione-estesa) | Design choices, architettura, API, wiki Obsidian |
 
 ## Il progetto
 
-Arkemis NEO Dashboard nasce come risposta alla challenge [arkemis.it/challenges/nasa-neo](https://arkemis.it/challenges/nasa-neo): prendere i dati grezzi di **NASA NeoWs** e trasformarli in un'esperienza leggibile, filtrabile e visivamente forte. Il browser non tocca mai direttamente `api.nasa.gov`: parla solo con il backend FastAPI, che fa da proxy, spezza i range lunghi, mette in cache le risposte e restituisce al frontend un payload già pronto per lista, grafici e schede dettaglio.
+Arkemis NEO Dashboard nasce come risposta alla challenge [di Arkemis](https://arkemis.it/challenges/nasa-neo): prendere i dati grezzi di **NASA NeoWs** e trasformarli in un'esperienza visivamente forte in cui l'utente può leggere e filtrare i dati. Il browser non tocca mai direttamente `api.nasa.gov`: parla solo con il backend FastAPI, che fa da proxy, spezza i range lunghi, mette in cache le risposte e restituisce al frontend un payload già pronto per lista, grafici e schede dettaglio.
 
-### Cosa rende il progetto utile
-- evita di esporre `NASA_API_KEY` nel browser
+In pratica questo progetto:
+
 - gestisce automaticamente il limite NASA dei 7 giorni per chiamata
 - riusa i chunk già scaricati grazie alla cache file-based
-- offre una UI con stati di loading, errore ed empty robusti
+- offre una UI con stati di loading, errore ed empty.
 - mantiene il feeling editoriale del mock `arkemis/`
-
-<img alt="Ricostruzione orbite maggio 2026" width="729" src="https://github.com/user-attachments/assets/174d3d9e-48b0-4ef7-bce8-0c7bd27463a3" />
-
-_Figura 01 — piccola ricostruzione delle orbite di due asteroidi nel mese di maggio._
 
 ## Screenshots
 
@@ -85,7 +81,7 @@ NASA NEO/
 <table>
   <tr>
     <td width="50%">
-      <h3>Backend intelligente</h3>
+      <h3>Backend</h3>
       <ul>
         <li>proxy unico verso NASA NeoWs</li>
         <li>chunking automatico oltre 7 giorni</li>
@@ -154,7 +150,7 @@ npm run dev
 
 ## API implementate
 
-Tutti gli endpoint reali esposti da [backend/app/main.py](backend/app/main.py).
+Tutti gli endpoint esposti da [backend/app/main.py](backend/app/main.py).
 
 | Metodo | Endpoint | Descrizione | Note |
 |---|---|---|---|
@@ -273,7 +269,3 @@ Guida completa, env var richieste e checklist in [docs/deployment-guide.md](docs
 </table>
 
 ---
-
-<p align="center">
-  <em>Il mock vive in <code>arkemis/</code>. L'app reale vive in <code>frontend/</code> e <code>backend/</code>.</em>
-</p>
