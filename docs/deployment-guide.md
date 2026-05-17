@@ -237,8 +237,8 @@ Questo progetto, nello stato attuale, consente di default solo origin locali:
 
 Il comportamento e' definito in:
 
-- [backend/app/core/config.py](/Users/mirkocalcaterra/Documents/GitHub/NASA NEO/backend/app/core/config.py)
-- [backend/app/main.py](/Users/mirkocalcaterra/Documents/GitHub/NASA NEO/backend/app/main.py)
+- [backend/app/core/config.py](../backend/app/core/config.py)
+- [backend/app/main.py](../backend/app/main.py)
 
 Quindi, se pubblichi il frontend su Vercel senza aggiornare questa parte, il browser blocchera' le chiamate al backend.
 
