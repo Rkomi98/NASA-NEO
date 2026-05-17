@@ -10,42 +10,22 @@
 </p>
 Una dashboard full-stack per leggere e filtrare i Near Earth Objects della NASA con <code>Next.js</code>, <code>FastAPI</code>, <code>ECharts</code> e un proxy che protegge la chiave NASA.
 
-<p align="center">
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#il-progetto">Il progetto</a> ·
-  <a href="#api-implementate">API</a> ·
-  <a href="#scelte-tecniche">Scelte tecniche</a> ·
-  <a href="#deploy">Deploy</a>
-</p>
-
 ---
 
-## Quick Cards
+## Indice
 
-<table>
-  <tr>
-    <td width="25%">
-      <h3>🚀 Quick Start</h3>
-      <p>Avvio locale di frontend e backend, variabili ambiente e check rapidi.</p>
-      <p><a href="#quick-start">Vai alla sezione</a></p>
-    </td>
-    <td width="25%">
-      <h3>🛰️ Architettura</h3>
-      <p>Monorepo con <code>frontend/</code>, <code>backend/</code>, cache file-based e contratti API chiari.</p>
-      <p><a href="#struttura">Apri la struttura</a></p>
-    </td>
-    <td width="25%">
-      <h3>📡 API</h3>
-      <p>Feed con chunking oltre 7 giorni, dettaglio NEO, health, metrics, invalidazione cache.</p>
-      <p><a href="#api-implementate">Vedi gli endpoint</a></p>
-    </td>
-    <td width="25%">
-      <h3>🌍 Deploy</h3>
-      <p>Setup consigliato con Vercel + Render/Railway/Fly.io e nota su GitHub Pages.</p>
-      <p><a href="#deploy">Apri la guida</a></p>
-    </td>
-  </tr>
-</table>
+| Sezione | Cosa trovi |
+|---|---|
+| [Il progetto](#il-progetto) | A cosa serve, perché esiste, da dove nasce |
+| [Screenshots](#screenshots) | Due viste dell'app dal vivo |
+| [Struttura](#struttura) | Layout del monorepo, cosa vive dove |
+| [Cosa fa](#cosa-fa) | Cosa offre il backend e cosa offre la UI |
+| [Quick Start](#quick-start) | Prerequisiti, env, avvio backend e frontend |
+| [API implementate](#api-implementate) | Tutti gli endpoint reali con note |
+| [Scelte tecniche](#scelte-tecniche) | Le decisioni chiave, in sintesi |
+| [Verifica](#verifica) | Test backend, type-check e build frontend, smoke test |
+| [Deploy](#deploy) | Configurazione consigliata, nota su GitHub Pages |
+| [Documentazione estesa](#documentazione-estesa) | Design choices, architettura, API, wiki Obsidian |
 
 ## Il progetto
 
